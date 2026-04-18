@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOMEFIRST VNA LLC - HR Compliance System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0A4D68;
+            --primary-light: #088395;
+            --accent: #05BFDB;
+            --warning: #FF6B35;
+            --danger: #E63946;
+            --success: #06D6A0;
+            --bg-primary: #F8FAFB;
+            --bg-secondary: #FFFFFF;
+            --text-primary: #1A1D29;
+            --text-secondary: #64748B;
+            --border: #E2E8F0;
+            --shadow-sm: 0 2px 8px rgba(10, 77, 104, 0.06);
+            --shadow-md: 0 4px 16px rgba(10, 77, 104, 0.08);
+            --shadow-lg: 0 12px 32px rgba(10, 77, 104, 0.12);
+        }
+
+        body {
+            font-family: 'Epilogue', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #F8FAFB 0%, #E8F4F8 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 2rem 2.5rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 3px solid var(--accent);
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo-section h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.3rem;
+        }
+
+        .logo-section p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .cloud-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .cloud-status.connected {
+            background: rgba(6, 214, 160, 0.2);
+        }
+
+        .cloud-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--warning);
+            animation: pulse 2s infinite;
+        }
+
+        .cloud-status.connected .cloud-indicator {
+            background: var(--success);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Epilogue', sans-serif;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #05b885;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem 2.5rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            flex: 1;
+            min-width: 150px;
+            padding: 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-family: 'Epilogue', sans-serif;
+            font-size: 0.95rem;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.75rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card.warning { border-left-color: var(--warning); }
+        .stat-card.danger { border-left-color: var(--danger); }
+        .stat-card.success { border-left-color: var(--success); }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .table-header {
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-header h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--bg-primary);
+        }
+
+        th {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-primary);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-valid {
+            background: rgba(6, 214, 160, 0.15);
+            color: var(--success);
+        }
+
+        .status-warning {
+            background: rgba(255, 107, 53, 0.15);
+            color: var(--warning);
+        }
+
+        .status-expired {
+            background: rgba(230, 57, 70, 0.15);
+            color: var(--danger);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideUp 0.3s ease;
+            margin: 2rem auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Epilogue', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(10, 77, 104, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: var(--bg-primary);
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(10, 77, 104, 0.05);
+        }
+
+        .uploaded-file {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            margin-top: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-edit {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-email {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-download {
+            background: var(--success);
+            color: white;
+        }
+
+        .alert-banner {
+            background: linear-gradient(135deg, var(--warning) 0%, #ff8c5a 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        .alert-banner.danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #f56576 100%);
+        }
+
+        .alert-icon {
+            font-size: 2rem;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .ocr-scanner {
+            background: white;
+            border: 2px dashed var(--accent);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .ocr-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .ocr-status {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.3s ease;
+        }
+
+        .policy-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .policy-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .policy-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .policy-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .policy-meta {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .admin-login {
+            max-width: 450px;
+            margin: 5rem auto;
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+
+        .admin-login h2 {
+            color: var(--primary);
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+
+        .search-filter {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .search-filter input,
+        .search-filter select {
+            padding: 0.875rem 1.25rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Epilogue', sans-serif;
+            font-size: 0.95rem;
+            min-width: 200px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .custom-doc-input {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .custom-doc-input.active {
+            display: block;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 77, 104, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: white;
+            gap: 1rem;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header-content { flex-direction: column; gap: 1rem; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .search-filter { flex-direction: column; }
+            .nav-tabs { flex-direction: column; }
+            .nav-tab { width: 100%; }
+        }
+
+        @media print {
+            .header-actions, .nav-tabs, .action-buttons, .btn { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div style="font-size: 1.1rem; font-weight: 600;">Loading data...</div>
+    </div>
+
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <h1>HOMEFIRST VNA LLC</h1>
+                <p>HR Compliance System - Cloud Enabled</p>
+            </div>
+            <div class="cloud-status" id="cloudStatus">
+                <div class="cloud-indicator"></div>
+                <span id="cloudStatusText">Dropbox Not Connected</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-success" id="connectDropboxBtn" onclick="connectDropbox()">
+                    ☁️ Connect Dropbox
+                </button>
+                <button class="btn btn-secondary" onclick="downloadReminderList()">
+                    📥 Download Reminders
+                </button>
+                <button class="btn btn-primary" onclick="openAddEmployeeModal()">
+                    ➕ Add Employee
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="alertBanners"></div>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="switchView('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" onclick="switchView('employees')">👥 Employees</button>
+            <button class="nav-tab" onclick="switchView('policies')">📋 Policies</button>
+            <button class="nav-tab" onclick="switchView('admin')">🔐 Admin</button>
+            <button class="nav-tab" onclick="switchView('calendar')">📅 Calendar</button>
+        </nav>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="view-section active">
+            <div class="stats-grid" id="statsGrid"></div>
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>⚠️ Upcoming Expirations (Next 30 Days)</h3>
+                </div>
+                <div id="upcomingExpirations"></div>
+            </div>
+        </div>
+
+        <!-- Employees -->
+        <div id="employees" class="view-section">
+            <div class="search-filter">
+                <input type="text" id="searchEmployee" placeholder="🔍 Search employees..." onkeyup="filterEmployees()">
+                <select id="filterStatus" onchange="filterEmployees()">
+                    <option value="">All Status</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+                <select id="filterDepartment" onchange="filterEmployees()">
+                    <option value="">All Departments</option>
+                </select>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>Employee List</h3>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Employee ID</th>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Expiring Soon</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Policies -->
+        <div id="policies" class="view-section">
+            <div class="search-filter">
+                <select id="policyCategoryFilter" onchange="filterPolicies()">
+                    <option value="">All Categories</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="HR">HR</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Compliance">Compliance</option>
+                    <option value="Safety">Safety</option>
+                    <option value="Clinical">Clinical</option>
+                </select>
+            </div>
+            <div id="policiesContainer"></div>
+        </div>
+
+        <!-- Admin -->
+        <div id="admin" class="view-section">
+            <div id="adminContent">
+                <div class="admin-login">
+                    <h2>🔐 Admin Access</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Enter admin password to access policy management</p>
+                    <form id="adminLoginForm">
+                        <div class="form-group">
+                            <input type="password" id="adminPassword" placeholder="Enter password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">
+                            Login
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div id="calendar" class="view-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <label style="font-weight: 600;">Year:</label>
+                    <select id="calendarYear" onchange="updateCalendar()" style="padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-weight: 600;">
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;" id="calendarGrid"></div>
+        </div>
+    </div>
+
+    <!-- Employee Modal -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Employee</h2>
+                <button class="close-btn" onclick="closeEmployeeModal()">×</button>
+            </div>
+            <form id="employeeForm">
+                <input type="hidden" id="employeeIndex">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Employee ID *</label>
+                        <input type="text" id="employeeId" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" id="fullName" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Department *</label>
+                        <input type="text" id="department" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Position/Title *</label>
+                        <input type="text" id="position" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email Address *</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="phone">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Hire Date</label>
+                        <input type="date" id="hireDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Status *</label>
+                        <select id="status" required>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeEmployeeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Document Modal -->
+    <div id="documentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="docModalTitle">Add Document</h2>
+                <button class="close-btn" onclick="closeDocumentModal()">×</button>
+            </div>
+
+            <div class="ocr-scanner">
+                <h3 style="color: var(--primary); margin-bottom: 1rem;">📸 Quick Document Scanner</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    Snap a photo to auto-extract dates & numbers
+                </p>
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('ocrImageInput').click()">
+                    📷 Scan Document
+                </button>
+                <input type="file" id="ocrImageInput" accept="image/*" capture="environment" onchange="handleFastOCR(event)">
+                <div id="ocrPreview"></div>
+                <div id="ocrStatus"></div>
+            </div>
+
+            <form id="documentForm">
+                <input type="hidden" id="docEmployeeIndex">
+                <input type="hidden" id="docIndex">
+
+                <div class="form-group">
+                    <label>Document Type *</label>
+                    <select id="docType" required onchange="toggleCustomDocType()">
+                        <option value="">Select document type...</option>
+                        <option value="Driving License">Driving License</option>
+                        <option value="TB Test">TB Test</option>
+                        <option value="Competency Training">Competency Training</option>
+                        <option value="Evaluation">Evaluation</option>
+                        <option value="CPR">CPR Certification</option>
+                        <option value="Car Registration">Car Registration</option>
+                        <option value="Nursing License">Nursing License</option>
+                        <option value="Insurance">Insurance Card</option>
+                        <option value="Other">Other (Custom)</option>
+                    </select>
+                </div>
+
+                <div class="form-group custom-doc-input" id="customDocTypeInput">
+                    <label>Custom Document Name *</label>
+                    <input type="text" id="customDocName" placeholder="e.g., Background Check, Reference Letter">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Issue Date *</label>
+                        <input type="date" id="issueDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Expiration Date *</label>
+                        <input type="date" id="expirationDate" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Document Number/ID</label>
+                        <input type="text" id="docNumber">
+                    </div>
+                    <div class="form-group">
+                        <label>Issuing Authority</label>
+                        <input type="text" id="issuingAuthority">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Upload Document (PDF or Word)</label>
+                    <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                        <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary);">📄</div>
+                        <div><strong>Click to upload</strong> or drag and drop</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                            PDF or Word documents (Max 10MB)
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" accept=".pdf,.doc,.docx" onchange="handleFileSelect(event)">
+                    <div id="uploadedFileDisplay"></div>
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeDocumentModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Document</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Employee Details Modal -->
+    <div id="employeeDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="modal-header">
+                <h2 id="employeeDetailsTitle">Employee Details</h2>
+                <button class="close-btn" onclick="closeEmployeeDetailsModal()">×</button>
+            </div>
+            <div id="employeeDetailsContent"></div>
+        </div>
+    </div>
+
+    <!-- Policy Modal -->
+    <div id="policyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Policy Document</h2>
+                <button class="close-btn" onclick="closePolicyModal()">×</button>
+            </div>
+            <form id="policyForm">
+                <input type="hidden" id="policyIndex">
+
+                <div class="form-group">
+                    <label>Policy Name *</label>
+                    <input type="text" id="policyName" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select id="policyCategory" required onchange="toggleCustomCategory()">
+                            <option value="">Select category...</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="HR">HR</option>
+                            <option value="Operations">Operations</option>
+                            <option value="Compliance">Compliance</option>
+                            <option value="Safety">Safety</option>
+                            <option value="Clinical">Clinical</option>
+                            <option value="Custom">Custom Category</option>
+                        </select>
+                    </div>
+                    <div class="form-group custom-doc-input" id="customCategoryInput">
+                        <label>Custom Category *</label>
+                        <input type="text" id="customCategory" placeholder="e.g., IT, Legal">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Version Number</label>
+                        <input type="text" id="policyVersion" placeholder="e.g., 1.0, 2.3">
+                    </div>
+                    <div class="form-group">
+                        <label>Effective Date *</label>
+                        <input type="date" id="policyEffectiveDate" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Review/Expiry Date</label>
+                    <input type="date" id="policyReviewDate">
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="policyDescription" placeholder="Brief description of this policy..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Tags (comma-separated)</label>
+                    <input type="text" id="policyTags" placeholder="e.g., confidential, mandatory, new-hire">
+                </div>
+
+                <div class="form-group">
+                    <label>Upload Policy Document (PDF or Word) *</label>
+                    <div class="file-upload-area" onclick="document.getElementById('policyFileInput').click()">
+                        <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary);">📑</div>
+                        <div><strong>Click to upload</strong> policy document</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                            PDF or Word documents (Max 20MB)
+                        </div>
+                    </div>
+                    <input type="file" id="policyFileInput" accept=".pdf,.doc,.docx" onchange="handlePolicyFileSelect(event)">
+                    <div id="policyFileDisplay"></div>
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closePolicyModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload Policy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Email Modal -->
+    <div id="emailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📧 Email Reminder</h2>
+                <button class="close-btn" onclick="closeEmailModal()">×</button>
+            </div>
+            <div style="background: var(--bg-primary); padding: 1.5rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; white-space: pre-wrap;" id="emailPreview"></div>
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeEmailModal()">Close</button>
+                <button class="btn btn-primary" onclick="copyEmailToClipboard()">📋 Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── Config ───────────────────────────────────────────────────────────────
+        const OWNER_EMAIL      = 'info@homefirstvna.com';
+        const ADMIN_PASSWORD   = 'Nancy@HomeFirst';
+        const DROPBOX_APP_KEY  = 'za9umfhi56psjek';
+        const SUPABASE_URL     = 'https://itmjloxdkpotnisajuvb.supabase.co';
+        const SUPABASE_KEY     = 'sb_publishable_ko6i6afvqUyRkNnsxrbPrw_wQ-6wpuo';
+        const DOC_BUCKET       = 'hr-documents';
+        const POL_BUCKET       = 'hr-policies';
+
+        // ─── Supabase client ──────────────────────────────────────────────────────
+        const { createClient } = supabase;
+        const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ─── State ────────────────────────────────────────────────────────────────
+        let employees = [];
+        let policies  = [];
+        let currentUploadedFile = null;
+        let currentPolicyFile   = null;
+        let isAdminLoggedIn     = false;
+        let dropboxClient       = null;
+        let dropboxAccessToken  = null;
+
+        // ─── Data mapping helpers ─────────────────────────────────────────────────
+        function mapEmployee(row, docs) {
+            return {
+                id:         row.id,
+                employeeId: row.employee_id,
+                fullName:   row.full_name,
+                department: row.department,
+                position:   row.position,
+                email:      row.email,
+                phone:      row.phone,
+                hireDate:   row.hire_date,
+                status:     row.status,
+                documents:  (docs || []).filter(d => d.employee_id === row.id).map(mapDocument)
+            };
+        }
+
+        function mapDocument(row) {
+            return {
+                id:              row.id,
+                employee_id:     row.employee_id,
+                type:            row.type,
+                customName:      row.custom_name,
+                issueDate:       row.issue_date,
+                expirationDate:  row.expiration_date,
+                docNumber:       row.doc_number,
+                issuingAuthority:row.issuing_authority,
+                fileName:        row.file_name,
+                storagePath:     row.storage_path,
+                dropboxId:       row.dropbox_id
+            };
+        }
+
+        function mapPolicy(row) {
+            return {
+                id:           row.id,
+                name:         row.name,
+                category:     row.category,
+                version:      row.version,
+                effectiveDate:row.effective_date,
+                reviewDate:   row.review_date,
+                description:  row.description,
+                tags:         row.tags,
+                fileName:     row.file_name,
+                storagePath:  row.storage_path,
+                uploadDate:   row.upload_date,
+                dropboxId:    row.dropbox_id
+            };
+        }
+
+        // ─── Load from Supabase ───────────────────────────────────────────────────
+        async function loadData() {
+            const [empRes, docRes, polRes] = await Promise.all([
+                db.from('employees').select('*').order('created_at'),
+                db.from('documents').select('*').order('created_at'),
+                db.from('policies').select('*').order('created_at')
+            ]);
+
+            if (empRes.error) throw empRes.error;
+            if (docRes.error) throw docRes.error;
+            if (polRes.error) throw polRes.error;
+
+            const docRows = docRes.data || [];
+            employees = (empRes.data || []).map(e => mapEmployee(e, docRows));
+            policies  = (polRes.data  || []).map(mapPolicy);
+        }
+
+        // ─── Supabase Storage ─────────────────────────────────────────────────────
+        async function uploadToStorage(fileData, fileName, bucket, folder) {
+            try {
+                const base64 = fileData.split(',')[1];
+                const binary = atob(base64);
+                const bytes  = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+                const uniqueName = `${Date.now()}_${fileName}`;
+                const path = folder ? `${folder}/${uniqueName}` : uniqueName;
+                const { data, error } = await db.storage.from(bucket).upload(path, bytes.buffer, { upsert: true });
+                if (error) throw error;
+                return data.path;
+            } catch (err) {
+                console.error('Storage upload error:', err);
+                return null;
+            }
+        }
+
+        async function downloadFromStorage(bucket, storagePath, fileName) {
+            try {
+                const { data, error } = await db.storage.from(bucket).download(storagePath);
+                if (error) throw error;
+                const url = URL.createObjectURL(data);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('Storage download error:', err);
+                alert('Download failed. Please try again.');
+            }
+        }
+
+        // ─── Dropbox ──────────────────────────────────────────────────────────────
+        function connectDropbox() {
+            const redirectUri = window.location.origin + window.location.pathname;
+            window.location.href = `https://www.dropbox.com/oauth2/authorize?client_id=${DROPBOX_APP_KEY}&response_type=token&redirect_uri=${redirectUri}`;
+        }
+
+        function handleDropboxAuth() {
+            const hash = window.location.hash;
+            if (hash && hash.includes('access_token')) {
+                const params = new URLSearchParams(hash.substring(1));
+                dropboxAccessToken = params.get('access_token');
+                if (dropboxAccessToken) {
+                    dropboxClient = new Dropbox.Dropbox({ accessToken: dropboxAccessToken });
+                    updateCloudStatus(true);
+                    localStorage.setItem('dropboxAccessToken', dropboxAccessToken);
+                    window.location.hash = '';
+                }
+            } else {
+                const saved = localStorage.getItem('dropboxAccessToken');
+                if (saved) {
+                    dropboxAccessToken = saved;
+                    dropboxClient = new Dropbox.Dropbox({ accessToken: saved });
+                    updateCloudStatus(true);
+                }
+            }
+        }
+
+        function updateCloudStatus(connected) {
+            const status = document.getElementById('cloudStatus');
+            const text   = document.getElementById('cloudStatusText');
+            const btn    = document.getElementById('connectDropboxBtn');
+            if (connected) {
+                status.classList.add('connected');
+                text.textContent = 'Dropbox Connected ✓';
+                btn.textContent  = '✅ Connected';
+                btn.disabled     = true;
+            } else {
+                status.classList.remove('connected');
+                text.textContent = 'Dropbox Not Connected';
+            }
+        }
+
+        async function uploadToDropbox(fileData, fileName, folderPath) {
+            if (!dropboxClient) return null;
+            try {
+                const base64 = fileData.split(',')[1];
+                const binary = atob(base64);
+                const bytes  = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                const response = await dropboxClient.filesUpload({
+                    path: `/${folderPath}/${fileName}`,
+                    contents: bytes.buffer,
+                    mode: 'overwrite'
+                });
+                return response.result.id;
+            } catch (err) {
+                console.error('Dropbox upload error:', err);
+                return null;
+            }
+        }
+
+        // ─── OCR ──────────────────────────────────────────────────────────────────
+        async function handleFastOCR(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const preview = document.getElementById('ocrPreview');
+            const status  = document.getElementById('ocrStatus');
+            const reader  = new FileReader();
+            reader.onload = e => { preview.innerHTML = `<img src="${e.target.result}" class="ocr-preview">`; };
+            reader.readAsDataURL(file);
+            status.innerHTML = `<div class="ocr-status">🔍 Scanning...<div class="progress-bar"><div class="progress-fill" style="width:20%"></div></div></div>`;
+            try {
+                const result = await Tesseract.recognize(file, 'eng', { logger: () => {} });
+                const text   = result.data.text;
+                const dates  = extractDates(text);
+                const nums   = extractDocNumbers(text);
+                if (dates.issue)      document.getElementById('issueDate').value      = dates.issue;
+                if (dates.expiration) document.getElementById('expirationDate').value = dates.expiration;
+                if (nums[0])          document.getElementById('docNumber').value       = nums[0];
+                status.innerHTML = `<div class="ocr-status" style="background:rgba(6,214,160,.15);color:var(--success)">✅ Scan complete!</div>`;
+            } catch {
+                status.innerHTML = `<div class="ocr-status" style="background:rgba(230,57,70,.15);color:var(--danger)">❌ Scan failed. Enter details manually.</div>`;
+            }
+        }
+
+        function extractDates(text) {
+            const lines   = text.split('\n');
+            const dateRx  = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/g;
+            let issue = null, expiration = null;
+            for (const line of lines) {
+                const lower = line.toLowerCase();
+                if (!issue      && (lower.includes('issue') || lower.includes('dob'))) { const m = line.match(dateRx); if (m) issue      = parseDate(m[0]); }
+                if (!expiration && (lower.includes('exp')   || lower.includes('expires'))) { const m = line.match(dateRx); if (m) expiration = parseDate(m[0]); }
+            }
+            if (!issue || !expiration) {
+                const all = text.match(dateRx);
+                if (all && all.length >= 2) { if (!issue) issue = parseDate(all[0]); if (!expiration) expiration = parseDate(all[1]); }
+            }
+            return { issue, expiration };
+        }
+
+        function extractDocNumbers(text) {
+            const patterns = [/\b[A-Z]{1,3}\d{6,10}\b/g, /\b\d{8,12}\b/g, /\b[A-Z0-9]{8,15}\b/g];
+            let nums = [];
+            for (const p of patterns) { const m = text.match(p); if (m) nums.push(...m); }
+            return [...new Set(nums)];
+        }
+
+        function parseDate(dateStr) {
+            const formats = [
+                { pattern: /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/, order: [2,0,1] },
+                { pattern: /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/,   order: [0,1,2] }
+            ];
+            for (const f of formats) {
+                const m = dateStr.match(f.pattern);
+                if (m) {
+                    let year  = m[f.order[0]+1];
+                    const mon = m[f.order[1]+1].padStart(2,'0');
+                    const day = m[f.order[2]+1].padStart(2,'0');
+                    if (year.length === 2) year = parseInt(year) > 50 ? '19'+year : '20'+year;
+                    return `${year}-${mon}-${day}`;
+                }
+            }
+            return null;
+        }
+
+        // ─── Toggle helpers ───────────────────────────────────────────────────────
+        function toggleCustomDocType() {
+            document.getElementById('customDocTypeInput').classList.toggle('active', document.getElementById('docType').value === 'Other');
+        }
+        function toggleCustomCategory() {
+            document.getElementById('customCategoryInput').classList.toggle('active', document.getElementById('policyCategory').value === 'Custom');
+        }
+
+        // ─── Admin ────────────────────────────────────────────────────────────────
+        function attachAdminLoginForm() {
+            document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const pw = document.getElementById('adminPassword').value;
+                if (pw === ADMIN_PASSWORD) { isAdminLoggedIn = true; renderAdminPanel(); }
+                else { alert('❌ Incorrect password.'); document.getElementById('adminPassword').value = ''; }
+            });
+        }
+        attachAdminLoginForm();
+
+        function renderAdminPanel() {
+            document.getElementById('adminContent').innerHTML = `
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>📋 Policy Management</h3>
+                        <button class="btn btn-primary" onclick="openPolicyModal()">➕ Upload Policy</button>
+                    </div>
+                    <div id="adminPoliciesContainer"></div>
+                </div>`;
+            renderAdminPolicies();
+        }
+
+        function renderAdminPolicies() {
+            const container = document.getElementById('adminPoliciesContainer');
+            if (!policies.length) {
+                container.innerHTML = '<div class="empty-state"><h3>No Policies</h3><p>Click "Upload Policy" to add company policies.</p></div>';
+                return;
+            }
+            const byCategory = {};
+            policies.forEach((p, i) => { (byCategory[p.category] = byCategory[p.category] || []).push({...p, index: i}); });
+            container.innerHTML = Object.entries(byCategory).map(([cat, pols]) => `
+                <div style="margin-bottom:2rem">
+                    <h3 style="color:var(--primary);margin-bottom:1rem">${cat}</h3>
+                    ${pols.map(p => `
+                        <div class="policy-card">
+                            <div class="policy-header">
+                                <div>
+                                    <div class="policy-title">${p.name}</div>
+                                    <div class="policy-meta">Version: ${p.version||'N/A'} | Effective: ${formatDate(p.effectiveDate)} | Uploaded: ${formatDate(p.uploadDate)}</div>
+                                </div>
+                                <div class="action-buttons">
+                                    <button class="btn-small btn-download" onclick="downloadPolicy(${p.index})">📥 Download</button>
+                                    <button class="btn-small btn-edit"     onclick="editPolicy(${p.index})">✏️ Edit</button>
+                                    <button class="btn-small btn-delete"   onclick="deletePolicy(${p.index})">🗑️ Delete</button>
+                                </div>
+                            </div>
+                            ${p.description ? `<p style="color:var(--text-secondary);margin-top:.5rem">${p.description}</p>` : ''}
+                            ${p.tags        ? `<div style="margin-top:.5rem;font-size:.85rem;color:var(--text-secondary)">Tags: ${p.tags}</div>` : ''}
+                        </div>`).join('')}
+                </div>`).join('');
+        }
+
+        // ─── Policy CRUD ──────────────────────────────────────────────────────────
+        function openPolicyModal() {
+            document.getElementById('policyForm').reset();
+            document.getElementById('policyIndex').value = '';
+            currentPolicyFile = null;
+            document.getElementById('policyFileDisplay').innerHTML = '';
+            document.getElementById('customCategoryInput').classList.remove('active');
+            document.getElementById('policyModal').classList.add('active');
+        }
+        function closePolicyModal() { document.getElementById('policyModal').classList.remove('active'); }
+
+        function handlePolicyFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.size > 20*1024*1024) { alert('File size must be less than 20MB.'); return; }
+            const reader = new FileReader();
+            reader.onload = e => {
+                currentPolicyFile = { name: file.name, size: file.size, type: file.type, data: e.target.result };
+                const icon = file.type.includes('pdf') ? '📕' : '📘';
+                document.getElementById('policyFileDisplay').innerHTML = `
+                    <div class="uploaded-file">
+                        <div style="font-size:2rem">${icon}</div>
+                        <div style="flex:1"><div style="font-weight:600">${file.name}</div><div style="font-size:.85rem;color:var(--text-secondary)">${(file.size/1024).toFixed(1)} KB</div></div>
+                        <button type="button" class="btn-small btn-delete" onclick="removePolicyFile()">Remove</button>
+                    </div>`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removePolicyFile() {
+            currentPolicyFile = null;
+            document.getElementById('policyFileDisplay').innerHTML = '';
+            document.getElementById('policyFileInput').value = '';
+        }
+
+        document.getElementById('policyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!currentPolicyFile) { alert('Please upload a policy document.'); return; }
+            const btn = e.target.querySelector('[type="submit"]');
+            btn.disabled = true; btn.textContent = 'Uploading...';
+            try {
+                const index = document.getElementById('policyIndex').value;
+                let category = document.getElementById('policyCategory').value;
+                if (category === 'Custom') category = document.getElementById('customCategory').value;
+                const now = new Date();
+
+                let storagePath = currentPolicyFile.storagePath || null;
+                if (currentPolicyFile.data) {
+                    storagePath = await uploadToStorage(currentPolicyFile.data, currentPolicyFile.name, POL_BUCKET, category);
+                }
+                let dropboxId = null;
+                if (dropboxClient && currentPolicyFile.data) {
+                    dropboxId = await uploadToDropbox(currentPolicyFile.data, currentPolicyFile.name, `HOMEFIRST VNA/Company Policies/${category}/${now.getFullYear()}`);
+                }
+
+                const row = {
+                    name:           document.getElementById('policyName').value,
+                    category,
+                    version:        document.getElementById('policyVersion').value,
+                    effective_date: document.getElementById('policyEffectiveDate').value,
+                    review_date:    document.getElementById('policyReviewDate').value || null,
+                    description:    document.getElementById('policyDescription').value,
+                    tags:           document.getElementById('policyTags').value,
+                    file_name:      currentPolicyFile.name,
+                    storage_path:   storagePath,
+                    upload_date:    now.toISOString().split('T')[0],
+                    dropbox_id:     dropboxId
+                };
+
+                if (index === '') {
+                    const { data, error } = await db.from('policies').insert(row).select().single();
+                    if (error) throw error;
+                    policies.push(mapPolicy(data));
+                } else {
+                    const { data, error } = await db.from('policies').update(row).eq('id', policies[index].id).select().single();
+                    if (error) throw error;
+                    policies[index] = mapPolicy(data);
+                }
+                closePolicyModal();
+                renderAdminPolicies();
+                renderPublicPolicies();
+            } catch (err) {
+                console.error(err);
+                alert('Failed to save policy: ' + err.message);
+            } finally {
+                btn.disabled = false; btn.textContent = 'Upload Policy';
+            }
+        });
+
+        function editPolicy(index) {
+            const p = policies[index];
+            document.getElementById('policyIndex').value = index;
+            document.getElementById('policyName').value  = p.name;
+            const standardCats = ['Finance','Marketing','HR','Operations','Compliance','Safety','Clinical'];
+            if (standardCats.includes(p.category)) {
+                document.getElementById('policyCategory').value = p.category;
+            } else {
+                document.getElementById('policyCategory').value = 'Custom';
+                document.getElementById('customCategory').value = p.category;
+                document.getElementById('customCategoryInput').classList.add('active');
+            }
+            document.getElementById('policyVersion').value       = p.version || '';
+            document.getElementById('policyEffectiveDate').value = p.effectiveDate;
+            document.getElementById('policyReviewDate').value    = p.reviewDate || '';
+            document.getElementById('policyDescription').value   = p.description || '';
+            document.getElementById('policyTags').value          = p.tags || '';
+            currentPolicyFile = { name: p.fileName, storagePath: p.storagePath };
+            document.getElementById('policyFileDisplay').innerHTML = `
+                <div class="uploaded-file">
+                    <div style="font-size:2rem">${p.fileName && p.fileName.endsWith('.pdf') ? '📕' : '📘'}</div>
+                    <div style="flex:1"><div style="font-weight:600">${p.fileName}</div></div>
+                </div>`;
+            document.getElementById('policyModal').classList.add('active');
+        }
+
+        async function deletePolicy(index) {
+            if (!confirm('Delete this policy?')) return;
+            try {
+                const p = policies[index];
+                const { error } = await db.from('policies').delete().eq('id', p.id);
+                if (error) throw error;
+                if (p.storagePath) await db.storage.from(POL_BUCKET).remove([p.storagePath]);
+                policies.splice(index, 1);
+                renderAdminPolicies();
+                renderPublicPolicies();
+            } catch (err) { console.error(err); alert('Failed to delete policy.'); }
+        }
+
+        async function downloadPolicy(index) {
+            const p = policies[index];
+            if (!p.storagePath) { alert('No file attached.'); return; }
+            await downloadFromStorage(POL_BUCKET, p.storagePath, p.fileName);
+        }
+
+        function renderPublicPolicies() {
+            const container = document.getElementById('policiesContainer');
+            const filter    = document.getElementById('policyCategoryFilter').value;
+            const filtered  = filter ? policies.filter(p => p.category === filter) : policies;
+            if (!filtered.length) { container.innerHTML = '<div class="empty-state"><h3>No Policies Found</h3></div>'; return; }
+            container.innerHTML = filtered.map(p => `
+                <div class="policy-card">
+                    <div class="policy-header">
+                        <div>
+                            <div class="policy-title">${p.name}</div>
+                            <div class="policy-meta">Category: ${p.category} | Version: ${p.version||'N/A'} | Effective: ${formatDate(p.effectiveDate)}</div>
+                        </div>
+                        <button class="btn-small btn-download" onclick="downloadPolicy(${policies.indexOf(p)})">📥 Download</button>
+                    </div>
+                    ${p.description ? `<p style="color:var(--text-secondary);margin-top:.5rem">${p.description}</p>` : ''}
+                </div>`).join('');
+        }
+        function filterPolicies() { renderPublicPolicies(); }
+
+        // ─── File select (documents) ──────────────────────────────────────────────
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const validTypes = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            if (!validTypes.includes(file.type)) { alert('Please upload only PDF or Word documents.'); return; }
+            if (file.size > 10*1024*1024) { alert('File size must be less than 10MB.'); return; }
+            const reader = new FileReader();
+            reader.onload = e => {
+                currentUploadedFile = { name: file.name, size: file.size, type: file.type, data: e.target.result };
+                const icon = file.type.includes('pdf') ? '📕' : '📘';
+                document.getElementById('uploadedFileDisplay').innerHTML = `
+                    <div class="uploaded-file">
+                        <div style="font-size:2rem">${icon}</div>
+                        <div style="flex:1"><div style="font-weight:600">${file.name}</div><div style="font-size:.85rem;color:var(--text-secondary)">${(file.size/1024).toFixed(1)} KB</div></div>
+                        <button type="button" class="btn-small btn-delete" onclick="removeUploadedFile()">Remove</button>
+                    </div>`;
+            };
+            reader.readAsDataURL(file);
+        }
+        function removeUploadedFile() {
+            currentUploadedFile = null;
+            document.getElementById('uploadedFileDisplay').innerHTML = '';
+            document.getElementById('fileInput').value = '';
+        }
+
+        // ─── View switching ───────────────────────────────────────────────────────
+        function switchView(viewName) {
+            if (viewName !== 'admin' && isAdminLoggedIn) {
+                isAdminLoggedIn = false;
+                document.getElementById('adminContent').innerHTML = `
+                    <div class="admin-login">
+                        <h2>🔐 Admin Access</h2>
+                        <p style="color:var(--text-secondary);margin-bottom:2rem">Enter admin password</p>
+                        <form id="adminLoginForm">
+                            <div class="form-group"><input type="password" id="adminPassword" placeholder="Enter password" required></div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">Login</button>
+                        </form>
+                    </div>`;
+                attachAdminLoginForm();
+            }
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(viewName).classList.add('active');
+            event.target.classList.add('active');
+            if (viewName === 'dashboard') updateDashboard();
+            if (viewName === 'employees') renderEmployeeTable();
+            if (viewName === 'policies')  renderPublicPolicies();
+            if (viewName === 'calendar')  updateCalendar();
+        }
+
+        // ─── Dashboard ────────────────────────────────────────────────────────────
+        function updateDashboard() { updateAlertBanners(); renderStats(); renderUpcomingExpirations(); }
+
+        function updateAlertBanners() {
+            const now       = new Date();
+            const thirtyDays = new Date(now.getTime() + 30*24*60*60*1000);
+            let expiringSoon = 0, expired = 0;
+            employees.forEach(emp => (emp.documents||[]).forEach(doc => {
+                const d = new Date(doc.expirationDate);
+                if (d < now) expired++; else if (d <= thirtyDays) expiringSoon++;
+            }));
+            let html = '';
+            if (expired > 0)      html += `<div class="alert-banner danger"><div class="alert-icon">🚨</div><div class="alert-content"><div class="alert-title">Urgent: ${expired} Document${expired>1?'s':''} Expired!</div></div></div>`;
+            if (expiringSoon > 0) html += `<div class="alert-banner"><div class="alert-icon">⚠️</div><div class="alert-content"><div class="alert-title">${expiringSoon} Document${expiringSoon>1?'s':''} Expiring Soon</div></div></div>`;
+            document.getElementById('alertBanners').innerHTML = html;
+        }
+
+        function renderStats() {
+            const now       = new Date();
+            const thirtyDays = new Date(now.getTime() + 30*24*60*60*1000);
+            let expiringSoon = 0, expired = 0, valid = 0;
+            employees.forEach(emp => (emp.documents||[]).forEach(doc => {
+                const d = new Date(doc.expirationDate);
+                if (d < now) expired++; else if (d <= thirtyDays) expiringSoon++; else valid++;
+            }));
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card"><div class="stat-label">Active Employees</div><div class="stat-value">${employees.filter(e=>e.status==='Active').length}</div></div>
+                <div class="stat-card success"><div class="stat-label">Valid Documents</div><div class="stat-value">${valid}</div></div>
+                <div class="stat-card warning"><div class="stat-label">Expiring Soon</div><div class="stat-value">${expiringSoon}</div></div>
+                <div class="stat-card danger"><div class="stat-label">Expired</div><div class="stat-value">${expired}</div></div>`;
+        }
+
+        function renderUpcomingExpirations() {
+            const now       = new Date();
+            const thirtyDays = new Date(now.getTime() + 30*24*60*60*1000);
+            let items = [];
+            employees.forEach((emp, ei) => (emp.documents||[]).forEach((doc, di) => {
+                const d = new Date(doc.expirationDate);
+                if (d >= now && d <= thirtyDays) items.push({ emp, doc, ei, di, days: Math.ceil((d-now)/86400000) });
+            }));
+            items.sort((a,b) => a.days - b.days);
+            if (!items.length) { document.getElementById('upcomingExpirations').innerHTML = '<div class="empty-state"><h3>✅ All Clear!</h3></div>'; return; }
+            document.getElementById('upcomingExpirations').innerHTML = `
+                <table>
+                    <thead><tr><th>Employee</th><th>Department</th><th>Document</th><th>Expiration</th><th>Days Left</th><th>Actions</th></tr></thead>
+                    <tbody>${items.map(i => {
+                        const docName = i.doc.type === 'Other' && i.doc.customName ? i.doc.customName : i.doc.type;
+                        return `<tr>
+                            <td><strong>${i.emp.fullName}</strong><br><small>${i.emp.employeeId}</small></td>
+                            <td>${i.emp.department}</td>
+                            <td>${docName}</td>
+                            <td>${formatDate(i.doc.expirationDate)}</td>
+                            <td><span class="status-badge status-warning">${i.days} days</span></td>
+                            <td><button class="btn-small btn-email" onclick="sendEmailReminder(${i.ei},${i.di})">📧 Send</button></td>
+                        </tr>`;
+                    }).join('')}</tbody>
+                </table>`;
+        }
+
+        // ─── Employee CRUD ────────────────────────────────────────────────────────
+        function renderEmployeeTable() {
+            const tbody     = document.getElementById('employeeTableBody');
+            const search    = document.getElementById('searchEmployee').value.toLowerCase();
+            const statusF   = document.getElementById('filterStatus').value;
+            const deptF     = document.getElementById('filterDepartment').value;
+            const now       = new Date();
+            const thirtyDays = new Date(now.getTime() + 30*24*60*60*1000);
+
+            let filtered = employees.filter(emp => {
+                if (statusF && emp.status !== statusF) return false;
+                if (deptF   && emp.department !== deptF) return false;
+                if (search  && !emp.fullName.toLowerCase().includes(search) && !emp.employeeId.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><h3>No Employees</h3></div></td></tr>'; return; }
+            tbody.innerHTML = filtered.map(emp => {
+                const i = employees.indexOf(emp);
+                let expiring = (emp.documents||[]).filter(doc => { const d=new Date(doc.expirationDate); return d>=now && d<=thirtyDays; }).length;
+                return `<tr>
+                    <td>${emp.employeeId}</td>
+                    <td><strong>${emp.fullName}</strong></td>
+                    <td>${emp.department}</td>
+                    <td>${expiring > 0 ? `<span class="status-badge status-warning">${expiring} docs</span>` : '—'}</td>
+                    <td><div class="action-buttons">
+                        <button class="btn-small btn-edit"   onclick="viewEmployeeDetails(${i})">📋 View</button>
+                        <button class="btn-small btn-edit"   onclick="editEmployee(${i})">✏️ Edit</button>
+                        <button class="btn-small btn-delete" onclick="deleteEmployee(${i})">🗑️</button>
+                    </div></td>
+                </tr>`;
+            }).join('');
+        }
+        function filterEmployees() { renderEmployeeTable(); }
+
+        function viewEmployeeDetails(index) {
+            const emp = employees[index];
+            let docsHTML = '';
+            if (emp.documents && emp.documents.length) {
+                docsHTML = emp.documents.map((doc, di) => {
+                    const docName = doc.type === 'Other' && doc.customName ? doc.customName : doc.type;
+                    return `<div style="background:var(--bg-primary);padding:1rem;border-radius:8px;margin-bottom:.75rem">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <div style="flex:1">
+                                <div style="font-weight:700">${docName}</div>
+                                <div style="font-size:.85rem;color:var(--text-secondary);margin-top:.25rem">Expires: ${formatDate(doc.expirationDate)} | Doc #: ${doc.docNumber||'N/A'}</div>
+                            </div>
+                            <div class="action-buttons">
+                                ${doc.storagePath ? `<button class="btn-small btn-download" onclick="downloadDocument(${index},${di})">📥</button>` : ''}
+                                <button class="btn-small btn-edit"   onclick="editDocument(${index},${di})">✏️</button>
+                                <button class="btn-small btn-delete" onclick="deleteDocument(${index},${di})">🗑️</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                docsHTML = '<p style="color:var(--text-secondary)">No documents yet.</p>';
+            }
+            document.getElementById('employeeDetailsTitle').textContent = emp.fullName;
+            document.getElementById('employeeDetailsContent').innerHTML = `
+                <div style="margin-bottom:2rem">
+                    <h3 style="margin-bottom:1rem;color:var(--primary)">Employee Information</h3>
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem">
+                        <div><strong>ID:</strong><br>${emp.employeeId}</div>
+                        <div><strong>Name:</strong><br>${emp.fullName}</div>
+                        <div><strong>Department:</strong><br>${emp.department}</div>
+                        <div><strong>Position:</strong><br>${emp.position}</div>
+                        <div><strong>Email:</strong><br>${emp.email}</div>
+                        <div><strong>Phone:</strong><br>${emp.phone||'N/A'}</div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:1rem">
+                        <h3 style="color:var(--primary)">Documents</h3>
+                        <button class="btn btn-primary" onclick="openDocumentModal(${index})">➕ Add Document</button>
+                    </div>
+                    ${docsHTML}
+                </div>`;
+            document.getElementById('employeeDetailsModal').classList.add('active');
+        }
+        function closeEmployeeDetailsModal() { document.getElementById('employeeDetailsModal').classList.remove('active'); }
+
+        function openAddEmployeeModal() {
+            document.getElementById('modalTitle').textContent = 'Add New Employee';
+            document.getElementById('employeeForm').reset();
+            document.getElementById('employeeIndex').value = '';
+            document.getElementById('employeeModal').classList.add('active');
+        }
+        function closeEmployeeModal() { document.getElementById('employeeModal').classList.remove('active'); }
+
+        function editEmployee(index) {
+            const emp = employees[index];
+            document.getElementById('modalTitle').textContent    = 'Edit Employee';
+            document.getElementById('employeeIndex').value       = index;
+            document.getElementById('employeeId').value          = emp.employeeId;
+            document.getElementById('fullName').value            = emp.fullName;
+            document.getElementById('department').value          = emp.department;
+            document.getElementById('position').value            = emp.position;
+            document.getElementById('email').value               = emp.email;
+            document.getElementById('phone').value               = emp.phone || '';
+            document.getElementById('hireDate').value            = emp.hireDate || '';
+            document.getElementById('status').value              = emp.status;
+            document.getElementById('employeeModal').classList.add('active');
+        }
+
+        async function deleteEmployee(index) {
+            if (!confirm('Delete this employee and all their documents?')) return;
+            try {
+                const { error } = await db.from('employees').delete().eq('id', employees[index].id);
+                if (error) throw error;
+                employees.splice(index, 1);
+                renderEmployeeTable();
+                updateDashboard();
+            } catch (err) { console.error(err); alert('Failed to delete employee.'); }
+        }
+
+        document.getElementById('employeeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('[type="submit"]');
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                const index  = document.getElementById('employeeIndex').value;
+                const empRow = {
+                    employee_id: document.getElementById('employeeId').value,
+                    full_name:   document.getElementById('fullName').value,
+                    department:  document.getElementById('department').value,
+                    position:    document.getElementById('position').value,
+                    email:       document.getElementById('email').value,
+                    phone:       document.getElementById('phone').value,
+                    hire_date:   document.getElementById('hireDate').value || null,
+                    status:      document.getElementById('status').value
+                };
+                if (index === '') {
+                    const { data, error } = await db.from('employees').insert(empRow).select().single();
+                    if (error) throw error;
+                    employees.push(mapEmployee(data, []));
+                } else {
+                    const { data, error } = await db.from('employees').update(empRow).eq('id', employees[index].id).select().single();
+                    if (error) throw error;
+                    const existingDocs    = employees[index].documents;
+                    employees[index]      = mapEmployee(data, []);
+                    employees[index].documents = existingDocs;
+                }
+                closeEmployeeModal();
+                renderEmployeeTable();
+                updateDashboard();
+                updateDepartmentFilter();
+            } catch (err) {
+                console.error(err);
+                alert('Failed to save employee: ' + err.message);
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save Employee';
+            }
+        });
+
+        // ─── Document CRUD ────────────────────────────────────────────────────────
+        function openDocumentModal(empIndex) {
+            document.getElementById('docModalTitle').textContent = 'Add Document';
+            document.getElementById('documentForm').reset();
+            document.getElementById('docEmployeeIndex').value = empIndex;
+            document.getElementById('docIndex').value         = '';
+            currentUploadedFile = null;
+            document.getElementById('uploadedFileDisplay').innerHTML = '';
+            document.getElementById('ocrPreview').innerHTML  = '';
+            document.getElementById('ocrStatus').innerHTML   = '';
+            document.getElementById('customDocTypeInput').classList.remove('active');
+            closeEmployeeDetailsModal();
+            document.getElementById('documentModal').classList.add('active');
+        }
+        function closeDocumentModal() { document.getElementById('documentModal').classList.remove('active'); }
+
+        function editDocument(empIndex, docIndex) {
+            const doc = employees[empIndex].documents[docIndex];
+            document.getElementById('docModalTitle').textContent  = 'Edit Document';
+            document.getElementById('docEmployeeIndex').value     = empIndex;
+            document.getElementById('docIndex').value             = docIndex;
+            if (doc.type === 'Other' && doc.customName) {
+                document.getElementById('docType').value     = 'Other';
+                document.getElementById('customDocName').value = doc.customName;
+                document.getElementById('customDocTypeInput').classList.add('active');
+            } else {
+                document.getElementById('docType').value = doc.type;
+            }
+            document.getElementById('issueDate').value        = doc.issueDate || '';
+            document.getElementById('expirationDate').value   = doc.expirationDate;
+            document.getElementById('docNumber').value        = doc.docNumber || '';
+            document.getElementById('issuingAuthority').value = doc.issuingAuthority || '';
+            if (doc.storagePath) {
+                document.getElementById('uploadedFileDisplay').innerHTML = `
+                    <div class="uploaded-file">
+                        <div style="font-size:2rem">${doc.fileName && doc.fileName.endsWith('.pdf') ? '📕' : '📘'}</div>
+                        <div style="flex:1"><div style="font-weight:600">${doc.fileName}</div><div style="font-size:.85rem;color:var(--text-secondary)">Existing file</div></div>
+                    </div>`;
+            }
+            closeEmployeeDetailsModal();
+            document.getElementById('documentModal').classList.add('active');
+        }
+
+        async function deleteDocument(empIndex, docIndex) {
+            if (!confirm('Delete this document?')) return;
+            try {
+                const doc = employees[empIndex].documents[docIndex];
+                const { error } = await db.from('documents').delete().eq('id', doc.id);
+                if (error) throw error;
+                if (doc.storagePath) await db.storage.from(DOC_BUCKET).remove([doc.storagePath]);
+                employees[empIndex].documents.splice(docIndex, 1);
+                viewEmployeeDetails(empIndex);
+                updateDashboard();
+            } catch (err) { console.error(err); alert('Failed to delete document.'); }
+        }
+
+        async function downloadDocument(empIndex, docIndex) {
+            const doc = employees[empIndex].documents[docIndex];
+            if (!doc.storagePath) { alert('No file attached.'); return; }
+            await downloadFromStorage(DOC_BUCKET, doc.storagePath, doc.fileName);
+        }
+
+        document.getElementById('documentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('[type="submit"]');
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                const empIndex   = parseInt(document.getElementById('docEmployeeIndex').value);
+                const docIndexVal = document.getElementById('docIndex').value;
+                let docType   = document.getElementById('docType').value;
+                let customName = null;
+                if (docType === 'Other') {
+                    customName = document.getElementById('customDocName').value;
+                    if (!customName) { alert('Please enter a custom document name.'); return; }
+                }
+
+                let storagePath = null;
+                let fileName    = null;
+
+                if (currentUploadedFile) {
+                    fileName    = currentUploadedFile.name;
+                    storagePath = await uploadToStorage(currentUploadedFile.data, fileName, DOC_BUCKET, employees[empIndex].employeeId);
+                    if (dropboxClient) {
+                        const year = new Date(document.getElementById('expirationDate').value).getFullYear();
+                        await uploadToDropbox(currentUploadedFile.data, fileName, `HOMEFIRST VNA/${employees[empIndex].fullName}/${year}`);
+                    }
+                } else if (docIndexVal !== '') {
+                    const existing = employees[empIndex].documents[docIndexVal];
+                    storagePath = existing.storagePath;
+                    fileName    = existing.fileName;
+                }
+
+                const docRow = {
+                    employee_id:      employees[empIndex].id,
+                    type:             docType,
+                    custom_name:      customName,
+                    issue_date:       document.getElementById('issueDate').value || null,
+                    expiration_date:  document.getElementById('expirationDate').value,
+                    doc_number:       document.getElementById('docNumber').value,
+                    issuing_authority:document.getElementById('issuingAuthority').value,
+                    file_name:        fileName,
+                    storage_path:     storagePath
+                };
+
+                if (docIndexVal === '') {
+                    const { data, error } = await db.from('documents').insert(docRow).select().single();
+                    if (error) throw error;
+                    if (!employees[empIndex].documents) employees[empIndex].documents = [];
+                    employees[empIndex].documents.push(mapDocument(data));
+                } else {
+                    const existing = employees[empIndex].documents[docIndexVal];
+                    const { data, error } = await db.from('documents').update(docRow).eq('id', existing.id).select().single();
+                    if (error) throw error;
+                    employees[empIndex].documents[docIndexVal] = mapDocument(data);
+                }
+                closeDocumentModal();
+                viewEmployeeDetails(empIndex);
+                updateDashboard();
+            } catch (err) {
+                console.error(err);
+                alert('Failed to save document: ' + err.message);
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save Document';
+            }
+        });
+
+        // ─── Calendar ─────────────────────────────────────────────────────────────
+        function updateCalendar() {
+            const year   = parseInt(document.getElementById('calendarYear').value);
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const byMonth = Array(12).fill(null).map(() => []);
+            employees.forEach(emp => (emp.documents||[]).forEach(doc => {
+                const d = new Date(doc.expirationDate);
+                if (d.getFullYear() === year) {
+                    const docName = doc.type === 'Other' && doc.customName ? doc.customName : doc.type;
+                    byMonth[d.getMonth()].push({ emp: emp.fullName, doc: docName });
+                }
+            }));
+            document.getElementById('calendarGrid').innerHTML = months.map((m, i) => `
+                <div style="background:white;padding:1.5rem;border-radius:12px;box-shadow:var(--shadow-sm);border-top:4px solid var(--primary)">
+                    <h4 style="color:var(--primary);margin-bottom:1rem">${m} ${year}</h4>
+                    ${!byMonth[i].length ? '<p style="color:var(--text-secondary);font-size:.85rem">No expirations</p>' :
+                        byMonth[i].map(item => `
+                            <div style="padding:.75rem;background:var(--bg-primary);border-radius:6px;margin-bottom:.5rem;font-size:.85rem">
+                                <div style="font-weight:600">${item.doc}</div>
+                                <div style="font-size:.8rem;margin-top:.25rem">${item.emp}</div>
+                            </div>`).join('')}
+                </div>`).join('');
+        }
+
+        // ─── Email ────────────────────────────────────────────────────────────────
+        function sendEmailReminder(empIndex, docIndex) {
+            const emp     = employees[empIndex];
+            const doc     = emp.documents[docIndex];
+            const docName = doc.type === 'Other' && doc.customName ? doc.customName : doc.type;
+            const days    = Math.ceil((new Date(doc.expirationDate) - new Date()) / (1000*60*60*24));
+            document.getElementById('emailPreview').textContent =
+`To: ${emp.email}, ${OWNER_EMAIL}
+From: HR Department <hr@homefirst.com>
+Subject: Document Expiration Reminder - ${docName}
+
+Dear ${emp.fullName} and Management,
+
+Document Type: ${docName}
+Expiration Date: ${formatDate(doc.expirationDate)}
+Days Until Expiration: ${days} days
+
+Please renew before expiration.
+
+Best regards,
+HOMEFIRST VNA LLC`;
+            document.getElementById('emailModal').classList.add('active');
+        }
+        function closeEmailModal() { document.getElementById('emailModal').classList.remove('active'); }
+        function copyEmailToClipboard() {
+            navigator.clipboard.writeText(document.getElementById('emailPreview').textContent).then(() => alert('✅ Email copied!'));
+        }
+
+        // ─── Utilities ────────────────────────────────────────────────────────────
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            return new Date(dateStr).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+        }
+
+        function updateDepartmentFilter() {
+            const depts = [...new Set(employees.map(e => e.department).filter(Boolean))];
+            document.getElementById('filterDepartment').innerHTML =
+                '<option value="">All Departments</option>' + depts.map(d => `<option value="${d}">${d}</option>`).join('');
+        }
+
+        function downloadReminderList() {
+            const now       = new Date();
+            const thirtyDays = new Date(now.getTime() + 30*24*60*60*1000);
+            let items = [];
+            employees.forEach(emp => (emp.documents||[]).forEach(doc => {
+                const d = new Date(doc.expirationDate);
+                if (d >= now && d <= thirtyDays) {
+                    const docName = doc.type === 'Other' && doc.customName ? doc.customName : doc.type;
+                    items.push({ emp, doc, days: Math.ceil((d-now)/86400000), docName });
+                }
+            }));
+            if (!items.length) { alert('No documents expiring in next 30 days.'); return; }
+            items.sort((a,b) => a.days - b.days);
+            let txt = `HOMEFIRST VNA LLC - REMINDER LIST\nGenerated: ${new Date().toLocaleString()}\n\n`;
+            items.forEach((item, i) => {
+                txt += `${i+1}. ${item.docName}\n   Employee: ${item.emp.fullName}\n   Expiration: ${formatDate(item.doc.expirationDate)} (${item.days} days)\n\n`;
+            });
+            const url = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+            const a   = document.createElement('a');
+            a.href = url; a.download = `HOMEFIRST_Reminders_${new Date().toISOString().split('T')[0]}.txt`;
+            a.click(); URL.revokeObjectURL(url);
+        }
+
+        // ─── Init ─────────────────────────────────────────────────────────────────
+        async function init() {
+            try {
+                await loadData();
+            } catch (err) {
+                console.error('Failed to load data:', err);
+                alert('Could not connect to database. Check console for details.');
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+            handleDropboxAuth();
+            updateDashboard();
+            updateDepartmentFilter();
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
