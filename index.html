@@ -1690,7 +1690,7 @@
                     if (filter !== 'all' && filter !== status) return;
                     if (search && !emp.fullName.toLowerCase().includes(search) &&
                         !docName.toLowerCase().includes(search) &&
-                        !emp.department.toLowerCase().includes(search)) return;
+                        !(emp.department||'').toLowerCase().includes(search)) return;
 
                     rows.push({ emp, doc, ei, di, docName, expDate, daysLeft, isExpired, isExpiring, status });
                 });
