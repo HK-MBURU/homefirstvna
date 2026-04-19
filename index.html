@@ -1541,6 +1541,98 @@
                         </div>`).join('')}
                 </div>
 
+                <!-- Employee Statistics -->
+                <div class="table-container" style="margin-bottom:2rem">
+                    <div class="table-header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;cursor:pointer" onclick="toggleEmpStats()">
+                        <h3 style="font-size:1rem">👥 Employee Statistics</h3>
+                        <span id="empStatsToggle" style="font-size:.8rem;color:var(--text-secondary)">▼ Show</span>
+                    </div>
+                    <div id="empStatsBody" style="display:none;padding:1.25rem 1.5rem">
+                        <!-- Department breakdown -->
+                        <div style="margin-bottom:1.5rem">
+                            <h4 style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:.75rem">By Department</h4>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem">
+                                ${(() => {
+                                    const depts = {};
+                                    employees.forEach(e => {
+                                        const d = e.department || 'Unassigned';
+                                        if (!depts[d]) depts[d] = { active:0, inactive:0 };
+                                        e.status === 'Active' ? depts[d].active++ : depts[d].inactive++;
+                                    });
+                                    return Object.entries(depts).sort((a,b)=>a[0].localeCompare(b[0])).map(([dept, counts]) => `
+                                        <div style="background:var(--bg-primary);border-radius:10px;padding:.9rem 1rem;border:1px solid var(--border)">
+                                            <div style="font-size:.82rem;font-weight:700;color:var(--text-primary);margin-bottom:.4rem">${dept}</div>
+                                            <div style="display:flex;gap:.6rem;font-size:.75rem">
+                                                <span style="color:var(--success);font-weight:700">${counts.active} active</span>
+                                                ${counts.inactive ? `<span style="color:var(--text-secondary)">${counts.inactive} inactive</span>` : ''}
+                                            </div>
+                                        </div>`).join('');
+                                })()}
+                            </div>
+                        </div>
+                        <!-- Employee roster -->
+                        <h4 style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:.75rem">Employee Roster (${employees.length})</h4>
+                        <div style="overflow-x:auto">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Dept / Position</th>
+                                        <th>Email</th>
+                                        <th>Hire Date</th>
+                                        <th>Status</th>
+                                        <th>Docs</th>
+                                        <th>Compliance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${(() => {
+                                        const now2 = new Date();
+                                        const t30  = new Date(now2.getTime() + 30*24*60*60*1000);
+                                        return employees.sort((a,b)=>a.fullName.localeCompare(b.fullName)).map((emp, ei) => {
+                                            const docs = emp.documents || [];
+                                            const expired2  = docs.filter(d => new Date(d.expirationDate) < now2).length;
+                                            const expiring2 = docs.filter(d => { const ex=new Date(d.expirationDate); return ex>=now2 && ex<=t30; }).length;
+                                            const pct = docs.length ? Math.round(((docs.length - expired2) / docs.length) * 100) : null;
+                                            const compColor = pct===null ? 'var(--text-secondary)' : pct===100 ? 'var(--success)' : pct>=70 ? 'var(--warning)' : 'var(--danger)';
+                                            const statusBg  = emp.status==='Active' ? 'rgba(6,214,160,.12)' : 'rgba(100,116,139,.12)';
+                                            const statusClr = emp.status==='Active' ? 'var(--success)' : 'var(--text-secondary)';
+                                            return `<tr>
+                                                <td>
+                                                    <div style="font-weight:700;font-size:.9rem">${emp.fullName}</div>
+                                                    <div style="font-size:.75rem;color:var(--text-secondary)">${emp.employeeId}</div>
+                                                </td>
+                                                <td>
+                                                    <div style="font-size:.85rem;font-weight:600">${emp.department||'—'}</div>
+                                                    <div style="font-size:.75rem;color:var(--text-secondary)">${emp.position||''}</div>
+                                                </td>
+                                                <td style="font-size:.82rem;color:var(--text-secondary)">${emp.email||'—'}</td>
+                                                <td style="font-size:.82rem">${emp.hireDate ? formatDate(emp.hireDate) : '—'}</td>
+                                                <td><span style="display:inline-block;padding:.25rem .65rem;border-radius:20px;font-size:.72rem;font-weight:700;background:${statusBg};color:${statusClr}">${emp.status||'Active'}</span></td>
+                                                <td style="font-size:.85rem;font-weight:600;text-align:center">
+                                                    ${docs.length}
+                                                    ${expired2  ? `<span title="${expired2} expired"  style="color:var(--danger);font-size:.7rem;margin-left:.2rem">⚠${expired2}</span>` : ''}
+                                                    ${expiring2 ? `<span title="${expiring2} expiring" style="color:var(--warning);font-size:.7rem;margin-left:.2rem">⏳${expiring2}</span>` : ''}
+                                                </td>
+                                                <td>
+                                                    ${pct===null
+                                                        ? '<span style="font-size:.78rem;color:var(--text-secondary)">No docs</span>'
+                                                        : `<div style="display:flex;align-items:center;gap:.5rem">
+                                                            <div style="flex:1;height:6px;background:var(--border);border-radius:3px;min-width:60px">
+                                                                <div style="height:100%;width:${pct}%;background:${compColor};border-radius:3px;transition:width .4s"></div>
+                                                            </div>
+                                                            <span style="font-size:.78rem;font-weight:700;color:${compColor}">${pct}%</span>
+                                                          </div>`}
+                                                </td>
+                                            </tr>`;
+                                        }).join('');
+                                    })()}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Document filter bar -->
                 <div style="display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center">
                     <input id="adminDocSearch" type="text" placeholder="🔍 Search employee or document…" oninput="renderAdminDocTable()" style="flex:1;min-width:200px;padding:.7rem 1rem;border:2px solid var(--border);border-radius:10px;font-family:'Epilogue',sans-serif;font-size:.88rem">
@@ -1662,6 +1754,15 @@
                         }).join('')}
                     </tbody>
                 </table>`;
+        }
+
+        function toggleEmpStats() {
+            const body   = document.getElementById('empStatsBody');
+            const toggle = document.getElementById('empStatsToggle');
+            if (!body) return;
+            const open = body.style.display === 'block';
+            body.style.display = open ? 'none' : 'block';
+            toggle.textContent  = open ? '▼ Show' : '▲ Hide';
         }
 
         async function adminLogout() {
