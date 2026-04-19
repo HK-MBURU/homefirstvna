@@ -1266,26 +1266,21 @@
 
         // ─── Supabase Storage ─────────────────────────────────────────────────────
         async function uploadToStorage(fileData, fileName, bucket, folder) {
-            try {
-                const [header, base64] = fileData.split(',');
-                const mimeType = header.match(/:(.*?);/)[1];
-                const binary = atob(base64);
-                const bytes  = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-                const blob = new Blob([bytes], { type: mimeType });
+            const [header, base64] = fileData.split(',');
+            const mimeType = header.match(/:(.*?);/)[1];
+            const binary = atob(base64);
+            const bytes  = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const blob = new Blob([bytes], { type: mimeType });
 
-                const uniqueName = `${Date.now()}_${fileName}`;
-                const path = folder ? `${folder}/${uniqueName}` : uniqueName;
-                const { data, error } = await db.storage.from(bucket).upload(path, blob, {
-                    upsert: true,
-                    contentType: mimeType
-                });
-                if (error) throw error;
-                return data.path;
-            } catch (err) {
-                console.error('Storage upload error:', err);
-                return null;
-            }
+            const uniqueName = `${Date.now()}_${fileName}`;
+            const path = folder ? `${folder}/${uniqueName}` : uniqueName;
+            const { data, error } = await db.storage.from(bucket).upload(path, blob, {
+                upsert: true,
+                contentType: mimeType
+            });
+            if (error) throw new Error(`Storage upload failed: ${error.message}`);
+            return data.path;
         }
 
         async function downloadFromStorage(bucket, storagePath, fileName) {
