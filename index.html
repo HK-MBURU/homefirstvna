@@ -1164,6 +1164,43 @@
         </div>
     </div>
 
+    <!-- Policy View Modal -->
+    <div id="policyViewModal" class="modal">
+        <div class="modal-content" style="max-width:640px;padding:0;overflow:hidden;border-radius:18px">
+            <!-- Hero band -->
+            <div id="pvmHeader" style="background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);padding:2rem 2rem 1.5rem;position:relative;color:white">
+                <button onclick="closePolicyViewModal()" style="position:absolute;top:1rem;right:1rem;width:34px;height:34px;border-radius:50%;border:none;background:rgba(255,255,255,.18);color:white;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.18)'">×</button>
+                <div id="pvmIcon" style="font-size:2.2rem;margin-bottom:.6rem">📋</div>
+                <h2 id="pvmName" style="font-size:1.35rem;font-weight:800;margin:0 0 .3rem;line-height:1.3"></h2>
+                <div id="pvmCategory" style="display:inline-block;padding:.25rem .75rem;border-radius:20px;background:rgba(255,255,255,.2);font-size:.78rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase"></div>
+            </div>
+
+            <!-- Body -->
+            <div style="padding:1.75rem 2rem 2rem;max-height:60vh;overflow-y:auto">
+                <!-- Quick facts grid -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem" id="pvmMeta"></div>
+
+                <!-- Description -->
+                <div id="pvmDescWrap" style="display:none;margin-bottom:1.25rem">
+                    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:.5rem">Description</div>
+                    <p id="pvmDesc" style="color:var(--text-primary);font-size:.9rem;line-height:1.65;margin:0;background:var(--bg-primary);border-radius:10px;padding:.9rem 1rem;border:1px solid var(--border)"></p>
+                </div>
+
+                <!-- Tags -->
+                <div id="pvmTagsWrap" style="display:none;margin-bottom:1.5rem">
+                    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:.5rem">Tags</div>
+                    <div id="pvmTags" style="display:flex;flex-wrap:wrap;gap:.4rem"></div>
+                </div>
+
+                <!-- Actions -->
+                <div style="display:flex;gap:.75rem;justify-content:flex-end;flex-wrap:wrap">
+                    <button onclick="closePolicyViewModal()" style="padding:.7rem 1.4rem;border:2px solid var(--border);background:white;color:var(--text-secondary);border-radius:10px;font-weight:700;font-size:.88rem;font-family:'Epilogue',sans-serif;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">Close</button>
+                    <button id="pvmDownloadBtn" onclick="" style="padding:.7rem 1.4rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;border:none;border-radius:10px;font-weight:700;font-size:.88rem;font-family:'Epilogue',sans-serif;cursor:pointer;box-shadow:0 4px 12px rgba(10,77,104,0.25);transition:all .2s;display:inline-flex;align-items:center;gap:.4rem" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">📥 Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Email Modal -->
     <div id="emailModal" class="modal">
         <div class="modal-content" style="max-width:680px">
@@ -1817,6 +1854,7 @@
                                     <div class="policy-meta">Version: ${p.version||'N/A'} | Effective: ${formatDate(p.effectiveDate)} | Uploaded: ${formatDate(p.uploadDate)}</div>
                                 </div>
                                 <div class="action-buttons">
+                                    <button class="btn-small btn-edit"     onclick="viewPolicy(${p.index})">👁 View</button>
                                     <button class="btn-small btn-download" onclick="downloadPolicy(${p.index})">📥 Download</button>
                                     <button class="btn-small btn-edit"     onclick="editPolicy(${p.index})">✏️ Edit</button>
                                     <button class="btn-small btn-delete"   onclick="deletePolicy(${p.index})">🗑️ Delete</button>
@@ -1838,6 +1876,55 @@
             document.getElementById('policyModal').classList.add('active');
         }
         function closePolicyModal() { document.getElementById('policyModal').classList.remove('active'); }
+
+        function viewPolicy(index) {
+            const p = policies[index];
+            const catColors = {
+                HR:'#0A4D68', Compliance:'#E63946', Safety:'#FF6B35', Clinical:'#088395',
+                Finance:'#06D6A0', Operations:'#05BFDB', Marketing:'#8B5CF6'
+            };
+            const accent = catColors[p.category] || 'var(--primary-light)';
+            document.getElementById('pvmHeader').style.background = `linear-gradient(135deg,${accent} 0%,${accent}cc 100%)`;
+            document.getElementById('pvmName').textContent     = p.name;
+            document.getElementById('pvmCategory').textContent = p.category || 'Uncategorized';
+
+            const metaItems = [
+                { icon:'📄', label:'Version',        value: p.version      || 'N/A' },
+                { icon:'📅', label:'Effective Date', value: p.effectiveDate ? formatDate(p.effectiveDate) : 'N/A' },
+                { icon:'🔄', label:'Review Date',    value: p.reviewDate   ? formatDate(p.reviewDate)   : 'N/A' },
+                { icon:'📤', label:'Uploaded',       value: p.uploadDate   ? formatDate(p.uploadDate)   : 'N/A' },
+            ];
+            document.getElementById('pvmMeta').innerHTML = metaItems.map(m => `
+                <div style="background:var(--bg-primary);border-radius:10px;padding:.8rem 1rem;border:1px solid var(--border)">
+                    <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-secondary);margin-bottom:.25rem">${m.icon} ${m.label}</div>
+                    <div style="font-size:.9rem;font-weight:700;color:var(--text-primary)">${m.value}</div>
+                </div>`).join('');
+
+            const descWrap = document.getElementById('pvmDescWrap');
+            descWrap.style.display = p.description ? 'block' : 'none';
+            if (p.description) document.getElementById('pvmDesc').textContent = p.description;
+
+            const tagsWrap = document.getElementById('pvmTagsWrap');
+            if (p.tags) {
+                tagsWrap.style.display = 'block';
+                document.getElementById('pvmTags').innerHTML = p.tags.split(',').map(t => t.trim()).filter(Boolean).map(t =>
+                    `<span style="padding:.28rem .7rem;border-radius:20px;background:rgba(10,77,104,.08);color:var(--primary);font-size:.75rem;font-weight:700;border:1px solid rgba(10,77,104,.15)">${t}</span>`
+                ).join('');
+            } else {
+                tagsWrap.style.display = 'none';
+            }
+
+            const dlBtn = document.getElementById('pvmDownloadBtn');
+            if (p.storagePath) {
+                dlBtn.style.display = 'inline-flex';
+                dlBtn.onclick = () => downloadPolicy(index);
+            } else {
+                dlBtn.style.display = 'none';
+            }
+
+            document.getElementById('policyViewModal').classList.add('active');
+        }
+        function closePolicyViewModal() { document.getElementById('policyViewModal').classList.remove('active'); }
 
         function handlePolicyFileSelect(event) {
             const file = event.target.files[0];
@@ -1969,7 +2056,10 @@
                             <div class="policy-title">${p.name}</div>
                             <div class="policy-meta">Category: ${p.category} | Version: ${p.version||'N/A'} | Effective: ${formatDate(p.effectiveDate)}</div>
                         </div>
-                        <button class="btn-small btn-download" onclick="downloadPolicy(${policies.indexOf(p)})">📥 Download</button>
+                        <div style="display:flex;gap:.5rem">
+                            <button class="btn-small btn-edit"     onclick="viewPolicy(${policies.indexOf(p)})">👁 View</button>
+                            <button class="btn-small btn-download" onclick="downloadPolicy(${policies.indexOf(p)})">📥 Download</button>
+                        </div>
                     </div>
                     ${p.description ? `<p style="color:var(--text-secondary);margin-top:.5rem">${p.description}</p>` : ''}
                 </div>`).join('');
