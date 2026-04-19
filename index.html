@@ -6,7 +6,6 @@
     <title>HOMEFIRST VNA LLC - HR Compliance System</title>
     <link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-    <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -750,14 +749,11 @@
                 <h1>HOMEFIRST VNA LLC</h1>
                 <p>HR Compliance System - Cloud Enabled</p>
             </div>
-            <div class="cloud-status" id="cloudStatus">
+            <div class="cloud-status connected">
                 <div class="cloud-indicator"></div>
-                <span id="cloudStatusText">Dropbox Not Connected</span>
+                <span>Supabase Connected ✓</span>
             </div>
             <div class="header-actions">
-                <button class="btn btn-success" id="connectDropboxBtn" onclick="connectDropbox()">
-                    ☁️ Connect Dropbox
-                </button>
                 <button class="btn btn-secondary" onclick="downloadReminderList()">
                     📥 Download Reminders
                 </button>
@@ -1179,7 +1175,6 @@
         // ─── Config ───────────────────────────────────────────────────────────────
         const OWNER_EMAIL      = 'info@homefirstvna.com';
         const ADMIN_PASSWORD   = 'Nancy@HomeFirst';
-        const DROPBOX_APP_KEY  = 'za9umfhi56psjek';
         const SUPABASE_URL     = 'https://itmjloxdkpotnisajuvb.supabase.co';
         const SUPABASE_KEY     = 'sb_publishable_ko6i6afvqUyRkNnsxrbPrw_wQ-6wpuo';
         const DOC_BUCKET       = 'hr-documents';
@@ -1195,8 +1190,6 @@
         let currentUploadedFile = null;
         let currentPolicyFile   = null;
         let isAdminLoggedIn     = false;
-        let dropboxClient       = null;
-        let dropboxAccessToken  = null;
 
         // ─── Data mapping helpers ─────────────────────────────────────────────────
         function mapEmployee(row, docs) {
@@ -1296,73 +1289,6 @@
             } catch (err) {
                 console.error('Storage download error:', err);
                 alert('Download failed. Please try again.');
-            }
-        }
-
-        // ─── Dropbox ──────────────────────────────────────────────────────────────
-        function connectDropbox() {
-            const redirectUri = window.location.origin + window.location.pathname;
-            if (window.location.protocol === 'file:') {
-                alert('Dropbox requires the app to be served from a web server (not a local file).\n\nHost the app on GitHub Pages or a web server, then try again.\n\nYour redirect URI will be:\n' + redirectUri);
-                return;
-            }
-            // Ensure this redirectUri is added in your Dropbox App Console:
-            // https://www.dropbox.com/developers/apps → your app → OAuth 2 → Redirect URIs
-            window.location.href = `https://www.dropbox.com/oauth2/authorize?client_id=${DROPBOX_APP_KEY}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}`;
-        }
-
-        function handleDropboxAuth() {
-            const hash = window.location.hash;
-            if (hash && hash.includes('access_token')) {
-                const params = new URLSearchParams(hash.substring(1));
-                dropboxAccessToken = params.get('access_token');
-                if (dropboxAccessToken) {
-                    dropboxClient = new Dropbox.Dropbox({ accessToken: dropboxAccessToken });
-                    updateCloudStatus(true);
-                    localStorage.setItem('dropboxAccessToken', dropboxAccessToken);
-                    window.location.hash = '';
-                }
-            } else {
-                const saved = localStorage.getItem('dropboxAccessToken');
-                if (saved) {
-                    dropboxAccessToken = saved;
-                    dropboxClient = new Dropbox.Dropbox({ accessToken: saved });
-                    updateCloudStatus(true);
-                }
-            }
-        }
-
-        function updateCloudStatus(connected) {
-            const status = document.getElementById('cloudStatus');
-            const text   = document.getElementById('cloudStatusText');
-            const btn    = document.getElementById('connectDropboxBtn');
-            if (connected) {
-                status.classList.add('connected');
-                text.textContent = 'Dropbox Connected ✓';
-                btn.textContent  = '✅ Connected';
-                btn.disabled     = true;
-            } else {
-                status.classList.remove('connected');
-                text.textContent = 'Dropbox Not Connected';
-            }
-        }
-
-        async function uploadToDropbox(fileData, fileName, folderPath) {
-            if (!dropboxClient) return null;
-            try {
-                const base64 = fileData.split(',')[1];
-                const binary = atob(base64);
-                const bytes  = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-                const response = await dropboxClient.filesUpload({
-                    path: `/${folderPath}/${fileName}`,
-                    contents: bytes.buffer,
-                    mode: 'overwrite'
-                });
-                return response.result.id;
-            } catch (err) {
-                console.error('Dropbox upload error:', err);
-                return null;
             }
         }
 
@@ -1620,10 +1546,6 @@
                 if (currentPolicyFile.data) {
                     storagePath = await uploadToStorage(currentPolicyFile.data, currentPolicyFile.name, POL_BUCKET, category);
                 }
-                let dropboxId = null;
-                if (dropboxClient && currentPolicyFile.data) {
-                    dropboxId = await uploadToDropbox(currentPolicyFile.data, currentPolicyFile.name, `HOMEFIRST VNA/Company Policies/${category}/${now.getFullYear()}`);
-                }
 
                 const row = {
                     name:           document.getElementById('policyName').value,
@@ -1635,8 +1557,7 @@
                     tags:           document.getElementById('policyTags').value,
                     file_name:      currentPolicyFile.name,
                     storage_path:   storagePath,
-                    upload_date:    now.toISOString().split('T')[0],
-                    dropbox_id:     dropboxId
+                    upload_date:    now.toISOString().split('T')[0]
                 };
 
                 if (index === '') {
@@ -2061,10 +1982,6 @@
                 if (currentUploadedFile) {
                     fileName    = currentUploadedFile.name;
                     storagePath = await uploadToStorage(currentUploadedFile.data, fileName, DOC_BUCKET, employees[empIndex].employeeId);
-                    if (dropboxClient) {
-                        const year = new Date(document.getElementById('expirationDate').value).getFullYear();
-                        await uploadToDropbox(currentUploadedFile.data, fileName, `HOMEFIRST VNA/${employees[empIndex].fullName}/${year}`);
-                    }
                 } else if (docIndexVal !== '') {
                     const existing = employees[empIndex].documents[docIndexVal];
                     storagePath = existing.storagePath;
@@ -2202,7 +2119,6 @@ HOMEFIRST VNA LLC`;
             } finally {
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
-            handleDropboxAuth();
             updateDashboard();
             updateDepartmentFilter();
         }
