@@ -1065,12 +1065,19 @@
 
     <!-- Employee Details Modal -->
     <div id="employeeDetailsModal" class="modal">
-        <div class="modal-content" style="max-width: 1000px;">
-            <div class="modal-header">
-                <h2 id="employeeDetailsTitle">Employee Details</h2>
-                <button class="close-btn" onclick="closeEmployeeDetailsModal()">×</button>
+        <div class="modal-content" style="max-width:620px;padding:0;overflow:hidden;border-radius:16px">
+
+            <!-- Coloured header band -->
+            <div style="background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);padding:1.5rem 2rem;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                    <div id="employeeDetailsTitle" style="font-size:1.4rem;font-weight:800;color:white;letter-spacing:-.3px"></div>
+                    <div id="employeeDetailsSubtitle" style="font-size:.85rem;color:rgba(255,255,255,.8);margin-top:.2rem"></div>
+                </div>
+                <button class="close-btn" onclick="closeEmployeeDetailsModal()" style="color:white;font-size:1.6rem;opacity:.8">×</button>
             </div>
-            <div id="employeeDetailsContent"></div>
+
+            <!-- Scrollable body -->
+            <div style="padding:1.5rem 2rem;max-height:70vh;overflow-y:auto" id="employeeDetailsContent"></div>
         </div>
     </div>
 
@@ -1827,48 +1834,80 @@
         function filterEmployees() { renderEmployeeTable(); }
 
         function viewEmployeeDetails(index) {
-            const emp = employees[index];
+            const emp     = employees[index];
+            const now     = new Date();
+            const totalDocs   = (emp.documents || []).length;
+            const expiredDocs = (emp.documents || []).filter(d => new Date(d.expirationDate) < now).length;
+            const statusColor = emp.status === 'Active' ? 'var(--success)' : 'var(--danger)';
+
+            // Header band
+            document.getElementById('employeeDetailsTitle').textContent    = emp.fullName;
+            document.getElementById('employeeDetailsSubtitle').textContent = `${emp.position} · ${emp.department}`;
+
+            // Document rows
             let docsHTML = '';
             if (emp.documents && emp.documents.length) {
                 docsHTML = emp.documents.map((doc, di) => {
-                    const docName = doc.type === 'Other' && doc.customName ? doc.customName : doc.type;
-                    return `<div style="background:var(--bg-primary);padding:1rem;border-radius:8px;margin-bottom:.75rem">
-                        <div style="display:flex;justify-content:space-between;align-items:center">
-                            <div style="flex:1">
-                                <div style="font-weight:700">${docName}</div>
-                                <div style="font-size:.85rem;color:var(--text-secondary);margin-top:.25rem">Expires: ${formatDate(doc.expirationDate)} | Doc #: ${doc.docNumber||'N/A'}</div>
-                            </div>
-                            <div class="action-buttons">
-                                ${doc.storagePath ? `<button class="btn-small btn-download" onclick="downloadDocument(${index},${di})">📥</button>` : ''}
-                                <button class="btn-small btn-edit"   onclick="editDocument(${index},${di})">✏️</button>
-                                <button class="btn-small btn-delete" onclick="deleteDocument(${index},${di})">🗑️</button>
-                            </div>
+                    const docName   = doc.type === 'Other' && doc.customName ? doc.customName : doc.type;
+                    const expDate   = new Date(doc.expirationDate);
+                    const daysLeft  = Math.ceil((expDate - now) / 86400000);
+                    const isExpired = expDate < now;
+                    const isWarning = !isExpired && daysLeft <= 30;
+                    const badgeColor = isExpired ? 'var(--danger)' : isWarning ? 'var(--warning)' : 'var(--success)';
+                    const badgeBg    = isExpired ? 'rgba(230,57,70,.1)' : isWarning ? 'rgba(255,107,53,.1)' : 'rgba(6,214,160,.1)';
+                    const badgeText  = isExpired ? 'Expired' : isWarning ? `${daysLeft}d left` : 'Valid';
+
+                    return `
+                    <div style="display:flex;align-items:center;gap:1rem;padding:.875rem 1rem;background:var(--bg-primary);border-radius:10px;margin-bottom:.6rem;border:1px solid var(--border)">
+                        <div style="width:36px;height:36px;background:rgba(10,77,104,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">📄</div>
+                        <div style="flex:1;min-width:0">
+                            <div style="font-weight:700;font-size:.9rem;color:var(--text-primary)">${docName}</div>
+                            <div style="font-size:.78rem;color:var(--text-secondary);margin-top:.15rem">Exp: ${formatDate(doc.expirationDate)}${doc.docNumber ? ' · #'+doc.docNumber : ''}</div>
+                        </div>
+                        <span style="font-size:.72rem;font-weight:700;padding:.25rem .6rem;border-radius:20px;background:${badgeBg};color:${badgeColor};white-space:nowrap">${badgeText}</span>
+                        <div style="display:flex;gap:.4rem;flex-shrink:0">
+                            ${doc.storagePath ? `<button title="Download" onclick="downloadDocument(${index},${di})" style="width:30px;height:30px;border:none;border-radius:6px;background:var(--success);color:white;cursor:pointer;font-size:.85rem">↓</button>` : ''}
+                            <button title="Edit" onclick="editDocument(${index},${di})" style="width:30px;height:30px;border:none;border-radius:6px;background:var(--accent);color:white;cursor:pointer;font-size:.85rem">✏️</button>
+                            <button title="Delete" onclick="deleteDocument(${index},${di})" style="width:30px;height:30px;border:none;border-radius:6px;background:var(--danger);color:white;cursor:pointer;font-size:.85rem">🗑</button>
                         </div>
                     </div>`;
                 }).join('');
             } else {
-                docsHTML = '<p style="color:var(--text-secondary)">No documents yet.</p>';
-            }
-            document.getElementById('employeeDetailsTitle').textContent = emp.fullName;
-            document.getElementById('employeeDetailsContent').innerHTML = `
-                <div style="margin-bottom:2rem">
-                    <h3 style="margin-bottom:1rem;color:var(--primary)">Employee Information</h3>
-                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem">
-                        <div><strong>ID:</strong><br>${emp.employeeId}</div>
-                        <div><strong>Name:</strong><br>${emp.fullName}</div>
-                        <div><strong>Department:</strong><br>${emp.department}</div>
-                        <div><strong>Position:</strong><br>${emp.position}</div>
-                        <div><strong>Email:</strong><br>${emp.email}</div>
-                        <div><strong>Phone:</strong><br>${emp.phone||'N/A'}</div>
-                    </div>
-                </div>
-                <div>
-                    <div style="display:flex;justify-content:space-between;margin-bottom:1rem">
-                        <h3 style="color:var(--primary)">Documents</h3>
-                        <button class="btn btn-primary" onclick="openDocumentModal(${index})">➕ Add Document</button>
-                    </div>
-                    ${docsHTML}
+                docsHTML = `<div style="text-align:center;padding:2rem;color:var(--text-secondary)">
+                    <div style="font-size:2rem;margin-bottom:.5rem">📂</div>
+                    <div style="font-weight:600">No documents yet</div>
                 </div>`;
+            }
+
+            document.getElementById('employeeDetailsContent').innerHTML = `
+                <!-- Info pills row -->
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.25rem">
+                    <span style="font-size:.8rem;font-weight:600;padding:.3rem .75rem;border-radius:20px;background:${statusColor}18;color:${statusColor};border:1px solid ${statusColor}40">${emp.status}</span>
+                    <span style="font-size:.8rem;font-weight:600;padding:.3rem .75rem;border-radius:20px;background:var(--bg-primary);color:var(--text-secondary);border:1px solid var(--border)">${totalDocs} document${totalDocs !== 1 ? 's' : ''}</span>
+                    ${expiredDocs > 0 ? `<span style="font-size:.8rem;font-weight:600;padding:.3rem .75rem;border-radius:20px;background:rgba(230,57,70,.1);color:var(--danger);border:1px solid rgba(230,57,70,.3)">${expiredDocs} expired</span>` : ''}
+                </div>
+
+                <!-- Info grid -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1.5rem">
+                    ${[
+                        ['🪪 ID',         emp.employeeId],
+                        ['📅 Hired',      emp.hireDate ? formatDate(emp.hireDate) : 'N/A'],
+                        ['✉️ Email',      emp.email],
+                        ['📞 Phone',      emp.phone || 'N/A'],
+                    ].map(([label, value]) => `
+                        <div style="background:var(--bg-primary);border-radius:8px;padding:.75rem 1rem;border:1px solid var(--border)">
+                            <div style="font-size:.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:.2rem">${label}</div>
+                            <div style="font-size:.88rem;font-weight:600;color:var(--text-primary)">${value}</div>
+                        </div>`).join('')}
+                </div>
+
+                <!-- Documents section -->
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+                    <span style="font-weight:700;font-size:.95rem;color:var(--text-primary)">Documents</span>
+                    <button onclick="openDocumentModal(${index})" style="padding:.45rem 1rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;border:none;border-radius:8px;font-size:.82rem;font-weight:700;font-family:'Epilogue',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem">➕ Add</button>
+                </div>
+                ${docsHTML}`;
+
             document.getElementById('employeeDetailsModal').classList.add('active');
         }
         function closeEmployeeDetailsModal() { document.getElementById('employeeDetailsModal').classList.remove('active'); }
