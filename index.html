@@ -1499,18 +1499,169 @@
         attachAdminLoginForm();
 
         function renderAdminPanel() {
+            const now        = new Date();
+            const thirtyDays = new Date(now.getTime() + 30*24*60*60*1000);
+
+            // Aggregate stats across all employees
+            let totalDocs = 0, validDocs = 0, expiringDocs = 0, expiredDocs = 0;
+            employees.forEach(emp => (emp.documents||[]).forEach(doc => {
+                totalDocs++;
+                const d = new Date(doc.expirationDate);
+                if (d < now) expiredDocs++;
+                else if (d <= thirtyDays) expiringDocs++;
+                else validDocs++;
+            }));
+
             document.getElementById('adminContent').innerHTML = `
+                <!-- Admin top bar -->
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.75rem;flex-wrap:wrap;gap:1rem">
+                    <div>
+                        <h2 style="font-size:1.5rem;font-weight:800;color:var(--text-primary)">Admin Dashboard</h2>
+                        <p style="color:var(--text-secondary);font-size:.9rem;margin-top:.2rem">Organisation-wide HR compliance overview</p>
+                    </div>
+                    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+                        <button onclick="openPolicyModal()" style="padding:.7rem 1.25rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;border:none;border-radius:10px;font-size:.88rem;font-weight:700;font-family:'Epilogue',sans-serif;cursor:pointer;box-shadow:0 4px 12px rgba(10,77,104,0.25);transition:all .3s;display:inline-flex;align-items:center;gap:.4rem" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">📤 Upload Policy</button>
+                        <button onclick="adminLogout()" style="padding:.7rem 1.25rem;background:white;color:var(--danger);border:2px solid var(--danger);border-radius:10px;font-size:.88rem;font-weight:700;font-family:'Epilogue',sans-serif;cursor:pointer;transition:all .3s;display:inline-flex;align-items:center;gap:.4rem" onmouseover="this.style.background='rgba(230,57,70,.06)'" onmouseout="this.style.background='white'">🚪 Logout</button>
+                    </div>
+                </div>
+
+                <!-- Stat cards -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:2rem">
+                    ${[
+                        { label:'Total Documents', value: totalDocs,   color:'var(--primary)',      icon:'📁' },
+                        { label:'Valid',           value: validDocs,   color:'var(--success)',      icon:'✅' },
+                        { label:'Expiring Soon',   value: expiringDocs,color:'var(--warning)',      icon:'⚠️' },
+                        { label:'Expired',         value: expiredDocs, color:'var(--danger)',        icon:'🚨' },
+                        { label:'Active Staff',    value: employees.filter(e=>e.status==='Active').length, color:'var(--accent)', icon:'👥' },
+                    ].map(s => `
+                        <div style="background:white;border-radius:14px;padding:1.25rem 1.5rem;box-shadow:var(--shadow-md);border-top:4px solid ${s.color};transition:transform .2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+                            <div style="font-size:1.5rem;margin-bottom:.4rem">${s.icon}</div>
+                            <div style="font-size:2rem;font-weight:800;color:${s.color};line-height:1">${s.value}</div>
+                            <div style="font-size:.78rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-top:.35rem">${s.label}</div>
+                        </div>`).join('')}
+                </div>
+
+                <!-- Document filter bar -->
+                <div style="display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center">
+                    <input id="adminDocSearch" type="text" placeholder="🔍 Search employee or document…" oninput="renderAdminDocTable()" style="flex:1;min-width:200px;padding:.7rem 1rem;border:2px solid var(--border);border-radius:10px;font-family:'Epilogue',sans-serif;font-size:.88rem">
+                    <select id="adminDocFilter" onchange="renderAdminDocTable()" style="padding:.7rem 1rem;border:2px solid var(--border);border-radius:10px;font-family:'Epilogue',sans-serif;font-size:.88rem;font-weight:600">
+                        <option value="all">All Documents</option>
+                        <option value="expired">Expired</option>
+                        <option value="expiring">Expiring Soon</option>
+                        <option value="valid">Valid</option>
+                    </select>
+                    <select id="adminDeptFilter" onchange="renderAdminDocTable()" style="padding:.7rem 1rem;border:2px solid var(--border);border-radius:10px;font-family:'Epilogue',sans-serif;font-size:.88rem;font-weight:600">
+                        <option value="">All Departments</option>
+                        ${[...new Set(employees.map(e=>e.department).filter(Boolean))].map(d=>`<option value="${d}">${d}</option>`).join('')}
+                    </select>
+                </div>
+
+                <!-- Documents table -->
+                <div class="table-container" style="margin-bottom:2rem">
+                    <div class="table-header" style="padding:1rem 1.5rem">
+                        <h3 style="font-size:1rem">📄 All Employee Documents</h3>
+                        <span id="adminDocCount" style="font-size:.82rem;opacity:.8"></span>
+                    </div>
+                    <div style="overflow-x:auto" id="adminDocTableWrap"></div>
+                </div>
+
+                <!-- Policy management -->
                 <div class="table-container">
                     <div class="table-header">
                         <h3>📋 Policy Management</h3>
-                        <div style="display:flex;gap:.75rem">
-                            <button onclick="openPolicyModal()" style="padding:.75rem 1.5rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;font-family:'Epilogue',sans-serif;cursor:pointer;letter-spacing:.3px;box-shadow:0 4px 15px rgba(10,77,104,0.3);transition:all .3s ease;display:inline-flex;align-items:center;gap:.5rem" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(10,77,104,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(10,77,104,0.3)'">➕ Upload Policy</button>
-                            <button class="btn btn-secondary" onclick="adminLogout()">🚪 Logout</button>
-                        </div>
                     </div>
                     <div id="adminPoliciesContainer"></div>
                 </div>`;
+
+            renderAdminDocTable();
             renderAdminPolicies();
+        }
+
+        function renderAdminDocTable() {
+            const now        = new Date();
+            const thirtyDays = new Date(now.getTime() + 30*24*60*60*1000);
+            const search     = (document.getElementById('adminDocSearch')?.value || '').toLowerCase();
+            const filter     = document.getElementById('adminDocFilter')?.value || 'all';
+            const deptFilter = document.getElementById('adminDeptFilter')?.value || '';
+
+            let rows = [];
+            employees.forEach((emp, ei) => {
+                if (deptFilter && emp.department !== deptFilter) return;
+                (emp.documents||[]).forEach((doc, di) => {
+                    const docName  = doc.type === 'Other' && doc.customName ? doc.customName : doc.type;
+                    const expDate  = new Date(doc.expirationDate);
+                    const daysLeft = Math.ceil((expDate - now) / 86400000);
+                    const isExpired  = expDate < now;
+                    const isExpiring = !isExpired && daysLeft <= 30;
+                    const status     = isExpired ? 'expired' : isExpiring ? 'expiring' : 'valid';
+
+                    if (filter !== 'all' && filter !== status) return;
+                    if (search && !emp.fullName.toLowerCase().includes(search) &&
+                        !docName.toLowerCase().includes(search) &&
+                        !emp.department.toLowerCase().includes(search)) return;
+
+                    rows.push({ emp, doc, ei, di, docName, expDate, daysLeft, isExpired, isExpiring, status });
+                });
+            });
+
+            // Sort: expired first, then expiring, then valid
+            const order = { expired:0, expiring:1, valid:2 };
+            rows.sort((a,b) => order[a.status] - order[b.status] || a.daysLeft - b.daysLeft);
+
+            document.getElementById('adminDocCount').textContent = `${rows.length} record${rows.length!==1?'s':''}`;
+
+            if (!rows.length) {
+                document.getElementById('adminDocTableWrap').innerHTML =
+                    '<div class="empty-state"><h3>No documents match your filters</h3></div>';
+                return;
+            }
+
+            document.getElementById('adminDocTableWrap').innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Document</th>
+                            <th>Doc #</th>
+                            <th>Expiration</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(r => {
+                            const badgeStyle = r.isExpired
+                                ? 'background:rgba(230,57,70,.12);color:var(--danger)'
+                                : r.isExpiring
+                                    ? 'background:rgba(255,107,53,.12);color:var(--warning)'
+                                    : 'background:rgba(6,214,160,.12);color:var(--success)';
+                            const badgeText = r.isExpired
+                                ? 'Expired'
+                                : r.isExpiring
+                                    ? `${r.daysLeft}d left`
+                                    : 'Valid';
+                            return `<tr>
+                                <td>
+                                    <div style="font-weight:700;font-size:.92rem">${r.emp.fullName}</div>
+                                    <div style="font-size:.78rem;color:var(--text-secondary)">${r.emp.employeeId}</div>
+                                </td>
+                                <td style="font-size:.88rem">${r.emp.department}</td>
+                                <td style="font-weight:600;font-size:.88rem">${r.docName}</td>
+                                <td style="font-size:.82rem;color:var(--text-secondary)">${r.doc.docNumber||'—'}</td>
+                                <td style="font-size:.88rem">${formatDate(r.doc.expirationDate)}</td>
+                                <td><span style="display:inline-block;padding:.3rem .75rem;border-radius:20px;font-size:.75rem;font-weight:700;${badgeStyle}">${badgeText}</span></td>
+                                <td>
+                                    <div style="display:flex;gap:.4rem">
+                                        <button title="Send Reminder" onclick="sendEmailReminder(${r.ei},${r.di});document.getElementById('emailModal').classList.add('active')" style="padding:.35rem .65rem;background:var(--warning);color:white;border:none;border-radius:6px;cursor:pointer;font-size:.8rem">📧</button>
+                                        ${r.doc.storagePath ? `<button title="Download" onclick="downloadDocument(${r.ei},${r.di})" style="padding:.35rem .65rem;background:var(--success);color:white;border:none;border-radius:6px;cursor:pointer;font-size:.8rem">📥</button>` : ''}
+                                        <button title="Edit" onclick="editDocument(${r.ei},${r.di})" style="padding:.35rem .65rem;background:var(--accent);color:white;border:none;border-radius:6px;cursor:pointer;font-size:.8rem">✏️</button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>`;
         }
 
         async function adminLogout() {
