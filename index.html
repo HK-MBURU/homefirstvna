@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -1199,9 +1200,10 @@
                 </div>
             </div>
 
-            <div style="margin-top:1.5rem;display:flex;gap:1rem;justify-content:flex-end">
+            <div style="margin-top:1.5rem;display:flex;gap:1rem;justify-content:flex-end;flex-wrap:wrap">
                 <button class="btn btn-secondary" onclick="closeEmailModal()">Close</button>
-                <button onclick="copyEmailToClipboard()" style="padding:.875rem 1.75rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;font-family:'Epilogue',sans-serif;cursor:pointer;box-shadow:0 4px 15px rgba(10,77,104,0.3);transition:all .3s ease;display:inline-flex;align-items:center;gap:.5rem" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(10,77,104,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(10,77,104,0.3)'">📋 Copy to Clipboard</button>
+                <button onclick="copyEmailToClipboard()" style="padding:.875rem 1.75rem;background:white;color:var(--primary);border:2px solid var(--primary);border-radius:10px;font-size:.95rem;font-weight:700;font-family:'Epilogue',sans-serif;cursor:pointer;transition:all .3s ease;display:inline-flex;align-items:center;gap:.5rem" onmouseover="this.style.background='var(--bg-primary)'" onmouseout="this.style.background='white'">📋 Copy to Clipboard</button>
+                <button id="sendEmailBtn" onclick="sendEmailDirectly()" style="padding:.875rem 1.75rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;font-family:'Epilogue',sans-serif;cursor:pointer;box-shadow:0 4px 15px rgba(10,77,104,0.3);transition:all .3s ease;display:inline-flex;align-items:center;gap:.5rem" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(10,77,104,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(10,77,104,0.3)'">📨 Send Email</button>
             </div>
         </div>
     </div>
@@ -1210,6 +1212,12 @@
         // ─── Config ───────────────────────────────────────────────────────────────
         const OWNER_EMAIL      = 'info@homefirstvna.com';
         const ADMIN_PASSWORD   = 'Nancy@HomeFirst';
+
+        // EmailJS — set these up at https://www.emailjs.com
+        const EMAILJS_PUBLIC_KEY   = 'YOUR_EMAILJS_PUBLIC_KEY';
+        const EMAILJS_SERVICE_ID   = 'YOUR_EMAILJS_SERVICE_ID';
+        const EMAILJS_TEMPLATE_ID  = 'YOUR_EMAILJS_TEMPLATE_ID';
+        const EMAILJS_CONFIGURED   = !EMAILJS_PUBLIC_KEY.startsWith('YOUR_');
         const SUPABASE_URL     = 'https://itmjloxdkpotnisajuvb.supabase.co';
         const SUPABASE_KEY     = 'sb_publishable_ko6i6afvqUyRkNnsxrbPrw_wQ-6wpuo';
         const DOC_BUCKET       = 'hr-documents';
@@ -1218,6 +1226,9 @@
         // ─── Supabase client ──────────────────────────────────────────────────────
         const { createClient } = supabase;
         const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ─── EmailJS init ─────────────────────────────────────────────────────────
+        if (EMAILJS_CONFIGURED) emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
 
         // ─── State ────────────────────────────────────────────────────────────────
         let employees = [];
@@ -2082,12 +2093,32 @@
         }
 
         // ─── Email ────────────────────────────────────────────────────────────────
+        // Store current email context so sendEmailDirectly() can access it
+        let _currentEmailContext = null;
+
         function sendEmailReminder(empIndex, docIndex) {
             const emp     = employees[empIndex];
             const doc     = emp.documents[docIndex];
             const docName = doc.type === 'Other' && doc.customName ? doc.customName : doc.type;
             const days    = Math.ceil((new Date(doc.expirationDate) - new Date()) / (1000*60*60*24));
             const urgency = days <= 7 ? { color: '#E63946', label: 'URGENT' } : { color: '#FF6B35', label: 'ACTION REQUIRED' };
+
+            // Save context for direct send
+            _currentEmailContext = { emp, doc, docName, days, urgency };
+
+            // Reset send button
+            const sendBtn = document.getElementById('sendEmailBtn');
+            if (!EMAILJS_CONFIGURED) {
+                sendBtn.title   = 'Configure EmailJS credentials in the code to enable direct sending';
+                sendBtn.style.opacity = '0.5';
+                sendBtn.style.cursor  = 'not-allowed';
+            } else {
+                sendBtn.title   = '';
+                sendBtn.style.opacity = '1';
+                sendBtn.style.cursor  = 'pointer';
+            }
+            sendBtn.disabled    = false;
+            sendBtn.textContent = '📨 Send Email';
 
             document.getElementById('emailTo').textContent      = `${emp.email}, ${OWNER_EMAIL}`;
             document.getElementById('emailSubject').textContent = `Document Expiration Reminder — ${docName}`;
@@ -2147,7 +2178,10 @@
             document.getElementById('emailModal').classList.add('active');
         }
 
-        function closeEmailModal() { document.getElementById('emailModal').classList.remove('active'); }
+        function closeEmailModal() {
+            document.getElementById('emailModal').classList.remove('active');
+            _currentEmailContext = null;
+        }
 
         function copyEmailToClipboard() {
             const to      = document.getElementById('emailTo').textContent;
@@ -2155,6 +2189,57 @@
             const body    = document.getElementById('emailPreview').innerText;
             const plain   = `To: ${to}\nFrom: HR Department <hr@homefirstvna.com>\nSubject: ${subject}\n\n${body}`;
             navigator.clipboard.writeText(plain).then(() => alert('✅ Email copied to clipboard!'));
+        }
+
+        async function sendEmailDirectly() {
+            if (!EMAILJS_CONFIGURED) {
+                alert('EmailJS is not configured yet.\n\nPlease follow the setup steps:\n1. Sign up at https://www.emailjs.com\n2. Create an email service (Gmail/Outlook)\n3. Create an email template\n4. Add your Public Key, Service ID, and Template ID in the code.');
+                return;
+            }
+            if (!_currentEmailContext) return;
+
+            const { emp, doc, docName, days, urgency } = _currentEmailContext;
+            const btn = document.getElementById('sendEmailBtn');
+            btn.disabled    = true;
+            btn.textContent = '⏳ Sending...';
+
+            try {
+                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                    to_email:        emp.email,
+                    cc_email:        OWNER_EMAIL,
+                    employee_name:   emp.fullName,
+                    employee_id:     emp.employeeId,
+                    department:      emp.department,
+                    document_type:   docName,
+                    doc_number:      doc.docNumber || 'N/A',
+                    expiration_date: formatDate(doc.expirationDate),
+                    days_remaining:  days,
+                    urgency_label:   urgency.label,
+                    issue_date:      formatDate(doc.issueDate),
+                    issuing_authority: doc.issuingAuthority || 'N/A'
+                });
+
+                btn.textContent          = '✅ Email Sent!';
+                btn.style.background     = 'linear-gradient(135deg,var(--success) 0%,#04c090 100%)';
+                btn.style.boxShadow      = '0 4px 15px rgba(6,214,160,0.4)';
+                btn.onmouseover          = null;
+                btn.onmouseout           = null;
+
+                setTimeout(() => {
+                    btn.disabled         = false;
+                    btn.textContent      = '📨 Send Email';
+                    btn.style.background = 'linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%)';
+                    btn.style.boxShadow  = '0 4px 15px rgba(10,77,104,0.3)';
+                    btn.onmouseover      = function() { this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(10,77,104,0.4)'; };
+                    btn.onmouseout       = function() { this.style.transform=''; this.style.boxShadow='0 4px 15px rgba(10,77,104,0.3)'; };
+                }, 3500);
+
+            } catch (err) {
+                console.error('EmailJS error:', err);
+                alert('Failed to send email: ' + (err.text || err.message || 'Unknown error'));
+                btn.disabled    = false;
+                btn.textContent = '📨 Send Email';
+            }
         }
 
         // ─── Utilities ────────────────────────────────────────────────────────────
