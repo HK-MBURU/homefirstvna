@@ -1158,15 +1158,50 @@
 
     <!-- Email Modal -->
     <div id="emailModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width:680px">
             <div class="modal-header">
                 <h2>📧 Email Reminder</h2>
                 <button class="close-btn" onclick="closeEmailModal()">×</button>
             </div>
-            <div style="background: var(--bg-primary); padding: 1.5rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; white-space: pre-wrap;" id="emailPreview"></div>
-            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end;">
+
+            <!-- Email meta fields -->
+            <div style="background:var(--bg-primary);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;font-size:.9rem;display:flex;flex-direction:column;gap:.5rem">
+                <div style="display:flex;gap:.75rem;align-items:center">
+                    <span style="font-weight:700;color:var(--text-secondary);width:48px">To</span>
+                    <span id="emailTo" style="color:var(--text-primary)"></span>
+                </div>
+                <div style="border-top:1px solid var(--border)"></div>
+                <div style="display:flex;gap:.75rem;align-items:center">
+                    <span style="font-weight:700;color:var(--text-secondary);width:48px">From</span>
+                    <span style="color:var(--text-primary)">HR Department &lt;hr@homefirstvna.com&gt;</span>
+                </div>
+                <div style="border-top:1px solid var(--border)"></div>
+                <div style="display:flex;gap:.75rem;align-items:center">
+                    <span style="font-weight:700;color:var(--text-secondary);width:48px">Subj</span>
+                    <span id="emailSubject" style="color:var(--text-primary);font-weight:600"></span>
+                </div>
+            </div>
+
+            <!-- Email body preview -->
+            <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+                <!-- Email header band -->
+                <div style="background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);padding:1.5rem 2rem;color:white">
+                    <div style="font-size:1.1rem;font-weight:800;letter-spacing:-.3px">HOMEFIRST VNA LLC</div>
+                    <div style="font-size:.85rem;opacity:.85;margin-top:.25rem">HR Compliance Department</div>
+                </div>
+
+                <!-- Body -->
+                <div style="padding:2rem;background:white" id="emailPreview"></div>
+
+                <!-- Footer -->
+                <div style="background:var(--bg-primary);padding:1rem 2rem;font-size:.8rem;color:var(--text-secondary);text-align:center;border-top:1px solid var(--border)">
+                    This is an automated reminder from the HOMEFIRST VNA HR Compliance System.
+                </div>
+            </div>
+
+            <div style="margin-top:1.5rem;display:flex;gap:1rem;justify-content:flex-end">
                 <button class="btn btn-secondary" onclick="closeEmailModal()">Close</button>
-                <button class="btn btn-primary" onclick="copyEmailToClipboard()">📋 Copy to Clipboard</button>
+                <button onclick="copyEmailToClipboard()" style="padding:.875rem 1.75rem;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:white;border:none;border-radius:10px;font-size:.95rem;font-weight:700;font-family:'Epilogue',sans-serif;cursor:pointer;box-shadow:0 4px 15px rgba(10,77,104,0.3);transition:all .3s ease;display:inline-flex;align-items:center;gap:.5rem" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(10,77,104,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(10,77,104,0.3)'">📋 Copy to Clipboard</button>
             </div>
         </div>
     </div>
@@ -2052,26 +2087,74 @@
             const doc     = emp.documents[docIndex];
             const docName = doc.type === 'Other' && doc.customName ? doc.customName : doc.type;
             const days    = Math.ceil((new Date(doc.expirationDate) - new Date()) / (1000*60*60*24));
-            document.getElementById('emailPreview').textContent =
-`To: ${emp.email}, ${OWNER_EMAIL}
-From: HR Department <hr@homefirst.com>
-Subject: Document Expiration Reminder - ${docName}
+            const urgency = days <= 7 ? { color: '#E63946', label: 'URGENT' } : { color: '#FF6B35', label: 'ACTION REQUIRED' };
 
-Dear ${emp.fullName} and Management,
+            document.getElementById('emailTo').textContent      = `${emp.email}, ${OWNER_EMAIL}`;
+            document.getElementById('emailSubject').textContent = `Document Expiration Reminder — ${docName}`;
 
-Document Type: ${docName}
-Expiration Date: ${formatDate(doc.expirationDate)}
-Days Until Expiration: ${days} days
+            document.getElementById('emailPreview').innerHTML = `
+                <p style="margin:0 0 1.25rem;font-size:1rem;color:#1A1D29">Dear <strong>${emp.fullName}</strong> and Management,</p>
+                <p style="margin:0 0 1.5rem;color:#64748B;line-height:1.7">
+                    This is a formal reminder that the following document is due for renewal.
+                    Please take the necessary steps to renew it before the expiration date to maintain compliance.
+                </p>
 
-Please renew before expiration.
+                <!-- Urgency badge -->
+                <div style="background:${urgency.color}15;border:1.5px solid ${urgency.color}40;border-radius:8px;padding:.75rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.75rem">
+                    <span style="background:${urgency.color};color:white;font-size:.7rem;font-weight:800;padding:.25rem .6rem;border-radius:4px;letter-spacing:.5px">${urgency.label}</span>
+                    <span style="color:${urgency.color};font-weight:700;font-size:.95rem">${days} day${days !== 1 ? 's' : ''} remaining until expiration</span>
+                </div>
 
-Best regards,
-HOMEFIRST VNA LLC`;
+                <!-- Document details table -->
+                <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;margin-bottom:1.5rem">
+                    <div style="background:#0A4D68;color:white;padding:.75rem 1.25rem;font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.5px">Document Details</div>
+                    <table style="width:100%;border-collapse:collapse">
+                        <tr style="border-bottom:1px solid #E2E8F0">
+                            <td style="padding:.75rem 1.25rem;font-weight:600;color:#64748B;width:40%;font-size:.9rem">Employee</td>
+                            <td style="padding:.75rem 1.25rem;color:#1A1D29;font-size:.9rem">${emp.fullName} (${emp.employeeId})</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid #E2E8F0;background:#F8FAFB">
+                            <td style="padding:.75rem 1.25rem;font-weight:600;color:#64748B;font-size:.9rem">Department</td>
+                            <td style="padding:.75rem 1.25rem;color:#1A1D29;font-size:.9rem">${emp.department}</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid #E2E8F0">
+                            <td style="padding:.75rem 1.25rem;font-weight:600;color:#64748B;font-size:.9rem">Document Type</td>
+                            <td style="padding:.75rem 1.25rem;color:#1A1D29;font-size:.9rem">${docName}</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid #E2E8F0;background:#F8FAFB">
+                            <td style="padding:.75rem 1.25rem;font-weight:600;color:#64748B;font-size:.9rem">Document #</td>
+                            <td style="padding:.75rem 1.25rem;color:#1A1D29;font-size:.9rem">${doc.docNumber || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:.75rem 1.25rem;font-weight:600;color:#64748B;font-size:.9rem">Expiration Date</td>
+                            <td style="padding:.75rem 1.25rem;font-weight:700;color:${urgency.color};font-size:.9rem">${formatDate(doc.expirationDate)}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <p style="margin:0 0 1.5rem;color:#64748B;font-size:.9rem;line-height:1.7">
+                    Failure to renew this document on time may affect compliance standing.
+                    Please contact HR immediately if you need assistance with the renewal process.
+                </p>
+
+                <p style="margin:0;color:#1A1D29;font-size:.9rem">
+                    Best regards,<br>
+                    <strong>HR Department</strong><br>
+                    <span style="color:#64748B">HOMEFIRST VNA LLC</span><br>
+                    <span style="color:#64748B">hr@homefirstvna.com</span>
+                </p>`;
+
             document.getElementById('emailModal').classList.add('active');
         }
+
         function closeEmailModal() { document.getElementById('emailModal').classList.remove('active'); }
+
         function copyEmailToClipboard() {
-            navigator.clipboard.writeText(document.getElementById('emailPreview').textContent).then(() => alert('✅ Email copied!'));
+            const to      = document.getElementById('emailTo').textContent;
+            const subject = document.getElementById('emailSubject').textContent;
+            const body    = document.getElementById('emailPreview').innerText;
+            const plain   = `To: ${to}\nFrom: HR Department <hr@homefirstvna.com>\nSubject: ${subject}\n\n${body}`;
+            navigator.clipboard.writeText(plain).then(() => alert('✅ Email copied to clipboard!'));
         }
 
         // ─── Utilities ────────────────────────────────────────────────────────────
